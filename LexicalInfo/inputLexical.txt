@@ -1,8 +1,4 @@
->>
 
-while (std::getline(inFile, info)) {
-        std::pair<int, int> cur = coupleFromString(info);
-        if (cur.first == -100 && cur.second == -100) continue;
-        statesType_[cur.first] = cur.second;
-        states_[cur.first]->type_ = cur.second;
-    }
+int main() {
+    float france = 1e3;
+}

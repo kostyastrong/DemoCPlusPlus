@@ -172,7 +172,7 @@ bool SyntaxAnalyzator::stContinue() {
 
 bool SyntaxAnalyzator::stType() {
     auto [cur, num] = getLexem();
-    if (cur != "int" && cur != "char" && cur != "double" && cur != "bool") return false;
+    if (cur != "int" && cur != "char" && cur != "double" && cur != "float" && cur != "bool") return false;
     return true;
 }
 
