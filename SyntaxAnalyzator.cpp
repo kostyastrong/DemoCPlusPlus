@@ -190,10 +190,10 @@ bool SyntaxAnalyzator::stOutput() {
         }
     } else { // Delimeter
     }
-    mainLexer_->jumpToCell(beforeTriesCell);
     while (true) {
         beforeTriesCell = mainLexer_->getCurrentLexCell();
         std::tie(cur, num) = getLexem();
+        std::cerr << cur << std::endl;
         if (cur != "<<") {
             mainLexer_->jumpToCell(beforeTriesCell);
             break;
