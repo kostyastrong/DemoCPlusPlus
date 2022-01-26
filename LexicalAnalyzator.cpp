@@ -212,3 +212,7 @@ void LexicalAnalyzator::fillTypes(const std::string &source) {
 void LexicalAnalyzator::retLex() {
     memory_ = memory_->prev;
 }
+
+std::pair<int, int> Cell::where() {
+    return {line_, index_};
+}

@@ -34,7 +34,10 @@ public:
     Cell* prev = nullptr;
     std::string lexem_;
     int t_ = -1;
-    Cell(std::string lexem, int t): lexem_(std::move(lexem)), t_(t){};
+    Cell(std::string lexem, int t, int line, int index): lexem_(std::move(lexem)), t_(t), line_(line), index_(index){};
+    std::pair<int, int> where();
+private:
+    int line_, index_;
 };
 
 class LexicalAnalyzator {
