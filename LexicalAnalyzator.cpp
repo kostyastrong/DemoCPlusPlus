@@ -106,10 +106,10 @@ void LexicalAnalyzator::splitFile(const std::string& reserved,
                 }
             }
             if (! memory_) {
-                memory_ = new Cell(lexem_, curType_);
+                memory_ = new Cell(lexem_, curType_, indexOfString, ind_);
                 lastWrite_ = memory_;
             } else {
-                lastWrite_->next = new Cell(lexem_, curType_);
+                lastWrite_->next = new Cell(lexem_, curType_, indexOfString, ind_);
                 lastWrite_->next->prev = lastWrite_;
                 lastWrite_ = lastWrite_->next;
             }
