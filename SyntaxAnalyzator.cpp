@@ -98,6 +98,8 @@ bool SyntaxAnalyzator::stDelimiter() {
 
 bool SyntaxAnalyzator::stName() {
     auto [cur, num] = getLexem();
+    if (num == 2) return true;
+    /*return false;
     bool check_first = cur[0] == '_' || (cur[0] >= 'a' && cur[0] <= 'z') ||
             (cur[0] >= 'A' && cur[0] <= 'Z');
     bool check_other = true;
@@ -109,7 +111,7 @@ bool SyntaxAnalyzator::stName() {
         check_other = false;
     }
     if (!(check_first && check_other)) return false;
-    return true;
+    return true;*/
 }
 
 bool SyntaxAnalyzator::stReturn() {

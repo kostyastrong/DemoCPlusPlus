@@ -7,13 +7,6 @@
 std::string a = statesTransactions;
 
 int main() {
-    std::cout << 1;
-    std::cout << a << std::endl;
-    a = statesTransactions;
-    std::cout << a << std::endl;
-    std::cout << "Hello, World!" << std::endl;
-    //std::cout << statesTransactions;
-    //LexicalAnalyzator::getChars(statesTransactions);
     LexicalAnalyzator *worker = new LexicalAnalyzator(statesTransactions, statesType);
     SyntaxAnalyzator syntaxworker(worker);
     syntaxworker.mainLexer_->splitFile();
