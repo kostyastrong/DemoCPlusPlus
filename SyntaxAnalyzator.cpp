@@ -16,7 +16,7 @@ bool SyntaxAnalyzator::stBool() {
     return true;
 }
 
-bool SyntaxAnalyzator::stNumber() {
+/*bool SyntaxAnalyzator::stNumber() {
     auto [cur, num] = getLexem();  // how to call lexer not by name
     int pt = 0;
     if (!(cur[0] >= '0' && cur[0] <= '9')) {
@@ -24,8 +24,10 @@ bool SyntaxAnalyzator::stNumber() {
         ++pt;
     }
     int n = static_cast<int>(cur.size());
-    if (n == 1) // error
-    if (!(cur[pt] >= '0' && cur[pt] <= '9')) return false;
+    if (n == 1) {
+        if (!(cur[pt] >= '0' && cur[pt] <= '9'))
+            return false;
+    }
     ++pt;
     //bool flag = true;
     int ind_pt = -1, ind_exp = -1;
@@ -61,7 +63,7 @@ bool SyntaxAnalyzator::stNumber() {
         }
     }
     return true;
-}
+}*/
 
 bool SyntaxAnalyzator::stOperation1() {
     auto [cur, num] = getLexem();
@@ -216,19 +218,22 @@ bool SyntaxAnalyzator::stOutput() {
 }
 
 bool SyntaxAnalyzator::stInitAtom() {
+    //std::cout << "init atom" << std::endl;
     auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    auto [cur1, num1] = getLexem();
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stNumber()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-//    beforeTriesCell = mainLexer_->getCurrentLexCell();
+    //std::cout << "a1" << std::endl;
     auto [cur, num] = getLexem();
+    if (num == 3) return true;
+    mainLexer_->jumpToCell(beforeTriesCell);
+    //std::cout << "a2" << std::endl;
+//    beforeTriesCell = mainLexer_->getCurrentLexCell();
+    std::tie(cur, num) = getLexem();
     if (cur != "!") return false;
     if (!stAtom()) return false;
     return true;
 }
 
 bool SyntaxAnalyzator::stAtom() {
+    //std::cout << "atom" << std::endl;
     auto beforeTriesCell = mainLexer_->getCurrentLexCell();
     if (stInitAtom()) return true; // InitAtom
     mainLexer_->jumpToCell(beforeTriesCell);
@@ -263,12 +268,16 @@ bool SyntaxAnalyzator::stPriority0(){
     auto beforeTriesCell = mainLexer_->getCurrentLexCell();
     auto [cur, num] = getLexem();
     if (cur == "+" || cur == "-") {
-        if (stAtom()) return true;
+        if (stAtom()) // Where else?
+            return true;
+        else
+            return false;
     }
     mainLexer_->jumpToCell(beforeTriesCell);
     if (stAtom()) {
         auto beforeTriesCell1 = mainLexer_->getCurrentLexCell();
-        if (stIncrement()) return true;
+        if (stIncrement())
+            return true;
         else {
             mainLexer_->jumpToCell(beforeTriesCell1);
             return true;
@@ -432,6 +441,7 @@ bool SyntaxAnalyzator::stPriority4Bool() {
 }
 
 bool SyntaxAnalyzator::stExpression() {
+    //std::cout << "expression" << std::endl;
     auto beforeTrieCell = mainLexer_->getCurrentLexCell();
     if (stPriority7()) return true;
     mainLexer_->jumpToCell(beforeTrieCell);
@@ -567,13 +577,19 @@ bool SyntaxAnalyzator::stConditionalOperator() {
 }
 
 bool SyntaxAnalyzator::stSection() {
+
     if (stName()) {
         auto beforeTriesCell = mainLexer_->getCurrentLexCell();
         auto [cur, num] = getLexem();
+        auto beforeTriesCell2 = mainLexer_->getCurrentLexCell();
+        auto [cur2, num2] = getLexem();
+        std::cerr << cur2 << " ?" << std::endl;
+        mainLexer_->jumpToCell(beforeTriesCell2);
         if (cur == "=") {
             if (!stExpression())
                 return false;
             return true;
+            //std::cout << "a!!!!" << std::endl;
         } else if (cur == "[") {
             if (!stExpression())
                 return false;
@@ -596,6 +612,7 @@ bool SyntaxAnalyzator::stDeclaration() {
         return false;
     while (true) {
         auto [cur, num] = getLexem();
+        std::cerr << cur << "!  " << std::endl;
         if (cur == ";")
             return true;
         if (cur == ",") {
@@ -753,7 +770,8 @@ bool SyntaxAnalyzator::stCompoundOperator() {
 }
 
 bool SyntaxAnalyzator::work() {
-    return stProgram();
+    //std::cout << "declaration" << std::endl;
+    return stDeclaration();
 }
 
 SyntaxAnalyzator::SyntaxAnalyzator(LexicalAnalyzator *&mainLexer): mainLexer_(mainLexer) {
