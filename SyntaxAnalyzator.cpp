@@ -507,18 +507,27 @@ bool SyntaxAnalyzator::stDoWhileOperator() {
 bool SyntaxAnalyzator::stForOperator() {
     auto [cur, num] = getLexem();
     if (cur != "for") return false;
+    //std::cout << "a1" << std::endl;
     std::tie(cur, num) = getLexem();
     if (cur != "(") return false;
+    //std::cout << "a2" << std::endl;
     if (!stDeclaration()) return false;
+    //std::cout << "a3" << std::endl;
+    //std::tie(cur, num) = getLexem();
+    //if (cur != ";") return false;
+    //std::cout << "a4" << std::endl;
+    if (!stExpression()) return false;
+    //std::cout << "a5" << std::endl;
     std::tie(cur, num) = getLexem();
     if (cur != ";") return false;
+    //std::cout << "a6" << std::endl;
     if (!stExpression()) return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ";") return false;
-    if (!stExpression()) return false;
+    //std::cout << "a7" << std::endl;
     std::tie(cur, num) = getLexem();
     if (cur != ")") return false;
+    //std::cout << "a8" << std::endl;
     if (!stOperator()) return false;
+    //std::cout << "a9" << std::endl;
     return true;
 }
 
@@ -770,8 +779,8 @@ bool SyntaxAnalyzator::stCompoundOperator() {
 }
 
 bool SyntaxAnalyzator::work() {
-    std::cout << "section" << std::endl;
-    return stSection();
+    //std::cout << "section" << std::endl;
+    return stProgram();
 }
 
 SyntaxAnalyzator::SyntaxAnalyzator(LexicalAnalyzator *&mainLexer): mainLexer_(mainLexer) {
