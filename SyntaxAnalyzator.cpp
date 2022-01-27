@@ -770,8 +770,8 @@ bool SyntaxAnalyzator::stCompoundOperator() {
 }
 
 bool SyntaxAnalyzator::work() {
-    //std::cout << "declaration" << std::endl;
-    return stDeclaration();
+    std::cout << "section" << std::endl;
+    return stSection();
 }
 
 SyntaxAnalyzator::SyntaxAnalyzator(LexicalAnalyzator *&mainLexer): mainLexer_(mainLexer) {
