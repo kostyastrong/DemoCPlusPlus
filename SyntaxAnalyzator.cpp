@@ -779,7 +779,6 @@ bool SyntaxAnalyzator::stCompoundOperator() {
 }
 
 bool SyntaxAnalyzator::work() {
-    //std::cout << "section" << std::endl;
     return stProgram();
 }
 
