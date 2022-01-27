@@ -3,6 +3,7 @@
 //
 
 #include <sstream>
+#include<vector>
 #include "LexicalAnalyzator.h"
 
 const std::string LEXPATH = "../LexicalInfo/";
@@ -49,6 +50,29 @@ std::unordered_set<char>* LexicalAnalyzator::getChars(const std::string& reserve
     return ret;
 }
 
+std::vector<std::string> devDouble(std::string& num) {
+    std::vector<std::string> ret(3);
+    int i = 0, n = num.size();
+    for (; i < n; ++i) {
+        if (num[i] == 'e') break;
+        ret[0] += num[i];
+    }
+    if (i == n) {
+        std::cout << "No 'e' in double: " << num;
+        exit(0);
+    }
+    if (i == n - 1 || i == n - 2 && (num[n - 1] == '-' || num[n - 1] == '+')) {
+        std::cout << "No digits after 'e' in double: " << num;
+        exit(0);
+    }
+    ret[1] = "e";
+    ++i;
+    for (; i < n; ++i) {
+        ret[2] += num[i];
+    }
+    return ret;
+}
+
 void LexicalAnalyzator::splitFile(const std::string& reserved,
                                   const std::string& inPath,
                                   const std::string& outPath) {
@@ -63,6 +87,7 @@ void LexicalAnalyzator::splitFile(const std::string& reserved,
         //std::cout << curString_[0];
         //exit(0);
         while (ind_ < curString_.size()) {
+            bool metE = false;
             State* tmp = states_[0]->jump_[curString_[ind_]];
             int deb = curString_[ind_];
             try {
@@ -79,8 +104,11 @@ void LexicalAnalyzator::splitFile(const std::string& reserved,
                 break;  // commentaries
             }
             if (ind_ >= curString_.size()) break;
-            while (tmp != nullptr && tmp->type_ == curType_) {
+            while (tmp != nullptr && (tmp->type_ == curType_ || -tmp->type_ == curType_)) {
                 lexem_ += curString_[ind_];
+                if (curString_[ind_] == 'e') {
+                    metE = true;
+                }
                 ++ind_;
                 if (ind_ <= curString_.size() - 1) {
                     int indLetter = curString_[ind_];
@@ -92,7 +120,16 @@ void LexicalAnalyzator::splitFile(const std::string& reserved,
                 if (reservedWords->find(lexem_) != reservedWords->end()) {
                     curType_ = 1;
                 }
-            }
+            } /*else if (curType_ == 3 && metE) {  // it's additional part for e
+                std::vector<std::string> toWrite = devDouble(lexem_);
+                pbInMemory(new Cell(toWrite[0], 3, indexOfString, ind_ - 1 - toWrite[2].size()));
+                pbInMemory(new Cell(toWrite[1], 3, indexOfString, ind_ - toWrite[2].size()));
+                pbInMemory(new Cell(toWrite[2], 3, indexOfString, ind_));
+                for (auto& i : toWrite) std::cout << i << ' ' << 3 << std::endl;
+                curType_ = 0;
+                lexem_ = "";
+                continue;
+            }*/
             if (tmp && tmp->type_ == 10) {
                 lexem_ += curString_[ind_];
                 ++ind_;
@@ -105,14 +142,7 @@ void LexicalAnalyzator::splitFile(const std::string& reserved,
                     exit(0);
                 }
             }
-            if (! memory_) {
-                memory_ = new Cell(lexem_, curType_, indexOfString, ind_);
-                lastWrite_ = memory_;
-            } else {
-                lastWrite_->next = new Cell(lexem_, curType_, indexOfString, ind_);
-                lastWrite_->next->prev = lastWrite_;
-                lastWrite_ = lastWrite_->next;
-            }
+            this->pbInMemory(new Cell(lexem_, curType_, indexOfString, ind_));  // with this?
             std::cout << lexem_ << ' ' << curType_ << '\n';
             curType_ = 0;
             lexem_ = "";
@@ -153,7 +183,7 @@ LexicalAnalyzator::LexicalAnalyzator(const std::string& sourceTrans, const std::
     reservedWords_ = getWords(reservedDefPath);
 }
 
-void LexicalAnalyzator::fillStates(const std::string &source) {
+void LexicalAnalyzator::fillStates(const std::string &source) {  // fill transitions in the state machine
     int current, further;
     std::string symbols;
     std::ifstream inFile;
@@ -175,7 +205,7 @@ void LexicalAnalyzator::fillStates(const std::string &source) {
     states_[0]->jump_['\t'] = states_[0];
 }
 
-std::pair<int, int> coupleFromString(const std::string& s) {
+std::pair<int, int> coupleFromString(const std::string& s) {  // read two numbers from string
     int x1 = stateNotExist, x2 = x1;
     std::stringstream ss;
     ss << s;
@@ -192,13 +222,13 @@ std::pair<int, int> coupleFromString(const std::string& s) {
     return {x1, x2};
 }
 
-void LexicalAnalyzator::fillTypes(const std::string &source) {
+void LexicalAnalyzator::fillTypes(const std::string &source) {  // fill types of lexemes we in
     int state, type;
     std::string info;
     std::ifstream inFile;
     inFile.open(source);
     if (!inFile) {
-        std::cout << "Unable to open file with ReservedWords\n";
+        std::cout << "Unable to open file with types of states\n";
         throw "The file for filling types is garbage!";
     }
     while (std::getline(inFile, info)) {
@@ -211,6 +241,17 @@ void LexicalAnalyzator::fillTypes(const std::string &source) {
 
 void LexicalAnalyzator::retLex() {
     memory_ = memory_->prev;
+}
+
+void LexicalAnalyzator::pbInMemory(Cell * adding) {
+    if (! memory_) {
+        memory_ = adding;
+        lastWrite_ = memory_;
+    } else {
+        lastWrite_->next = adding;
+        lastWrite_->next->prev = lastWrite_;
+        lastWrite_ = lastWrite_->next;
+    }
 }
 
 std::pair<int, int> Cell::where() {

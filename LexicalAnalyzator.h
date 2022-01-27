@@ -56,6 +56,7 @@ public:
     std::pair<std::string, int> getLexem();
     Cell* getCurrentLexCell();
     void jumpToCell(Cell* memorizedCell);
+    void pbInMemory(Cell*);
 
 private:
     int curType_ = 0;
