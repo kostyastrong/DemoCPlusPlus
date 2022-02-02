@@ -54,6 +54,7 @@ public:
 
     LexicalAnalyzator(const std::string& sourceTrans, const std::string& sourceTypes);
     std::pair<std::string, int> getLexem();
+    std::pair<std::string, int> movLexem();
     Cell* getCurrentLexCell();
     void jumpToCell(Cell* memorizedCell);
     void pbInMemory(Cell*);

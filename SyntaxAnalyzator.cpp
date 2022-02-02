@@ -4,99 +4,91 @@
 
 #include "SyntaxAnalyzator.h"
 
+using namespace std::literals::string_literals;
+
+std::pair<std::string, int> SyntaxAnalyzator::movLexem() {
+    return mainLexer_->movLexem();
+}
 std::pair<std::string, int> SyntaxAnalyzator::getLexem() {
     return mainLexer_->getLexem();
 }
 
-bool SyntaxAnalyzator::stBool() {
-    auto [cur, num] = getLexem();  // AOAOAOAO, LOOK HERE, IS IT COPY OF STRING???
-    if (cur != "true" && cur != "false") {  // either first or we
+bool SyntaxAnalyzator::isType() {
+    auto [cur, num] = getLexem();
+    if (cur != "int" && cur != "char" && cur != "double" && cur != "float" && cur != "bool")
+        return false;
+    return true;
+}
+
+bool SyntaxAnalyzator::isBool() {
+    auto [cur, num] = getLexem();
+    if (cur != "true" && cur != "false") {
         return false;
     }
     return true;
 }
 
-/*bool SyntaxAnalyzator::stNumber() {
-    auto [cur, num] = getLexem();  // how to call lexer not by name
-    int pt = 0;
-    if (!(cur[0] >= '0' && cur[0] <= '9')) {
-        if (!(cur[0] == '+' || cur[0] == '-')) return false;
-        ++pt;
-    }
-    int n = static_cast<int>(cur.size());
-    if (n == 1) {
-        if (!(cur[pt] >= '0' && cur[pt] <= '9'))
-            return false;
-    }
-    ++pt;
-    //bool flag = true;
-    int ind_pt = -1, ind_exp = -1;
-    int ind_sign = -1;
-    for (int i = pt; i < n; ++i) {
-        if (!(cur[i] >= '0' && cur[i] <= '9')) {
-            if (cur[i] == '.') {
-                if (ind_pt != -1) return false;
-                else ind_pt = i;
-            } else if (cur[i] == 'e' || cur[i] == 'E') {
-                if (ind_exp != -1) return false;
-                else ind_exp = i;
-            } else if (cur[i] == '+' || cur[i] == '-'){
-                if (ind_sign != -1) return false;
-                else ind_sign = i;
-            } else {
-                return false;
-            }
-        }
-    }
-    if (ind_pt == -1 && ind_exp == -1 && ind_sign == -1) return true;
-    if (ind_pt != -1 && ind_exp != -1) return false;
-    if (ind_pt != -1) {
-        if (ind_pt == n - 1) return false;
-        if (ind_sign != -1) return false;
-    }
-    if (ind_exp != -1) {
-        if (ind_sign == -1) {
-            if (ind_exp == n - 1) return false;
-        } else {
-            if (ind_exp + 1 != ind_sign) return false;
-            if (ind_sign == n - 1) return false;
-        }
-    }
-    return true;
-}*/
-
-bool SyntaxAnalyzator::stOperation1() {
+bool SyntaxAnalyzator::isNumber() {
     auto [cur, num] = getLexem();
-    if (cur != "*" && cur != "/" && cur != "%") return false;
+    if (num != 3) {
+        return false;
+    }
     return true;
 }
 
-bool SyntaxAnalyzator::stOperation2() {
+bool SyntaxAnalyzator::isSign() {
     auto [cur, num] = getLexem();
-    if (cur != "+" && cur != "-") return false;
+    if (cur != "+" && cur != "-") {
+        return false;
+    }
     return true;
 }
 
-bool SyntaxAnalyzator::stOperation3() {
+bool SyntaxAnalyzator::isIncrement() {
     auto [cur, num] = getLexem();
-    if (cur != "<" && cur != ">" && cur != "<=" && cur != ">=") return false;
+    if (cur != "--" && cur != "++") {
+        return false;
+    }
     return true;
 }
 
-bool SyntaxAnalyzator::stOperation4() {
+bool SyntaxAnalyzator::isOperation1() {
     auto [cur, num] = getLexem();
-    if (cur != "==" && cur != "<>") return false;
+    if (cur != "*" && cur != "/" && cur != "%")
+        return false;
+    return true;
+}
+
+bool SyntaxAnalyzator::isOperation2() {
+    auto [cur, num] = getLexem();
+    if (cur != "+" && cur != "-")
+        return false;
+    return true;
+}
+
+bool SyntaxAnalyzator::isOperation3() {
+    auto [cur, num] = getLexem();
+    if (cur != "<" && cur != ">" && cur != "<=" && cur != ">=")
+        return false;
+    return true;
+}
+
+bool SyntaxAnalyzator::isOperation4() {
+    auto [cur, num] = getLexem();
+    if (cur != "==" && cur != "<>")
+        return false;
     return true;
 }
 
 
-bool SyntaxAnalyzator::stDelimiter() {
+bool SyntaxAnalyzator::isDelimiter() {
     auto [cur, num] = getLexem();
-    if (cur != "\n" && cur != "' '") return false;
+    if (cur != "\n" && cur != "\' \'")
+        return false;
     return true;
 }
 
-bool SyntaxAnalyzator::stName() {
+bool SyntaxAnalyzator::isName() {
     auto [cur, num] = getLexem();
     bool check_first = cur[0] == '_' || (cur[0] >= 'a' && cur[0] <= 'z') ||
             (cur[0] >= 'A' && cur[0] <= 'Z');
@@ -108,506 +100,544 @@ bool SyntaxAnalyzator::stName() {
         }
         check_other = false;
     }
-    if (!(check_first && check_other)) return false;
-    return true;
-}
-
-bool SyntaxAnalyzator::stReturn() {
-    auto [cur, num] = getLexem();
-    if (cur != "return") return false;
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    std::tie(cur, num) = getLexem();
-    if (cur == ";") return true;
-    /*mainLexer_->jumpToCell(beforeTriesCell);
-    beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stName()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stBool()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stNumber()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    std::tie(cur, num) = getLexem();
-    if (cur != ";") // error
-    return true;*/
-    mainLexer_->jumpToCell(beforeTriesCell);
-    //beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stExpression()) {
-        std::tie(cur, num) = getLexem();
-        if (cur == ";") return true;
-        else return false;
-    }
-    return false;
-}
-
-bool SyntaxAnalyzator::stInput() {
-    auto [cur, num] = getLexem();
-    if (cur != "cin") return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ">>") return false;
-    if (!stName()) return false;
-    while (true) {
-        std::tie(cur, num) = getLexem();
-        if (cur == ";") break;
-        if (cur != ">>") return false;
-        if (!stName()) return false;
-    }
-    return true;
-}
-
-bool SyntaxAnalyzator::stBreak() {
-    auto [cur, num] = getLexem();
-    if (cur != "break") return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ";") return false;
-    return true;
-}
-
-bool SyntaxAnalyzator::stContinue() {
-    auto [cur, num] = getLexem();
-    if (cur != "continue") return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ";") return false;
-    return true;
-}
-
-bool SyntaxAnalyzator::stType() {
-    auto [cur, num] = getLexem();
-    if (cur != "int" && cur != "char" && cur != "double" && cur != "float" && cur != "bool") return false;
-    return true;
-}
-
-bool SyntaxAnalyzator::stOutput() {
-    auto [cur, num] = getLexem();
-    if (cur != "cout") return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "<<") return false;
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (!stDelimiter()) {
-        mainLexer_->jumpToCell(beforeTriesCell);
-        if (!stExpression()) {
-            return false;
-        } else { // Expression
-        }
-    } else { // Delimeter
-    }
-    while (true) {
-        beforeTriesCell = mainLexer_->getCurrentLexCell();
-        std::tie(cur, num) = getLexem();
-        std::cerr << cur << std::endl;
-        if (cur != "<<") {
-            mainLexer_->jumpToCell(beforeTriesCell);
-            break;
-        }
-        beforeTriesCell = mainLexer_->getCurrentLexCell();
-        if (!stDelimiter()) {
-            mainLexer_->jumpToCell(beforeTriesCell);
-            if (!stExpression()) {
-                mainLexer_->jumpToCell(beforeTriesCell);
-                break;
-            } else { // Expression
-            }
-        } else { // Delimeter
-        }
-    }
-    std::tie(cur, num) = getLexem();
-    if (cur != ";")
+    if (!(check_first && check_other))
         return false;
     return true;
 }
 
-bool SyntaxAnalyzator::stInitAtom() {
-    //std::cout << "init atom" << std::endl;
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    //std::cout << "a1" << std::endl;
-    auto [cur, num] = getLexem();
-    if (num == 3) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    //std::cout << "a2" << std::endl;
-//    beforeTriesCell = mainLexer_->getCurrentLexCell();
+bool SyntaxAnalyzator::stReturnOperator() {
+    auto [cur, num] = movLexem();
+    if (cur != "return") {
+        throw "Syntax error: expected return, but "s + (num ? cur : "nothing"s) + "is found"s;
+    }
     std::tie(cur, num) = getLexem();
-    if (cur != "!") return false;
-    if (!stAtom()) return false;
+    if (cur == ";") {
+        movLexem();
+        return true;
+    }
+    if (stExpression()) {
+        std::tie(cur, num) = movLexem();
+        if (cur == ";") {
+            return true;
+        } else {
+            throw "Syntax error: expected ; after return operator, but "s + (num ? cur : "nothing"s) + "is found"s;
+        }
+    }
+    throw "Syntax error: expected simple return or expression in return but neither is found"s;
+}
+
+bool SyntaxAnalyzator::stInputOperator() {
+    auto [cur, num] = movLexem();
+    if (cur != "cin") {
+        throw "Syntax error: expected cin in input operator"s;
+    }
+    std::tie(cur, num) = movLexem();
+    if (cur != ">>") {
+        throw "Syntax error: expected >> in input operator"s;
+    }
+    if (!isName()) {
+        throw "Syntax error: expected name in input operator"s;
+    } else {
+        movLexem();
+    }
+    while (true) {
+        std::tie(cur, num) = movLexem();
+        if (cur == ";") {
+            break;
+        }
+        if (cur != ">>") {
+            throw "Syntax error: expected >> in input operator"s;
+        }
+        if (!isName()) {
+            throw "Syntax error: expected name in input operator"s;
+        } else {
+            movLexem();
+        }
+    }
     return true;
+}
+
+bool SyntaxAnalyzator::stOutputOperator() {
+    auto [cur, num] = movLexem();
+    if (cur != "cout") {
+        throw "Syntax error: expected cout in output operator"s;
+    }
+    std::tie(cur, num) = movLexem();
+    if (cur != "<<") {
+        throw "Syntax error: expected << in output operator"s;
+    }
+    if (!isDelimiter()) {
+        if (!stExpression()) {
+            throw "Syntax error: expected expression or delimiter in output operator but neither is found"s;
+        } else { // Expression
+        }
+    } else { // Delimeter
+        movLexem();
+    }
+    while (true) {
+        std::tie(cur, num) = movLexem();
+        if (cur == ";") {
+            return true;
+        }
+        if (cur != "<<") {
+            throw "Syntax error: expected << in output operator"s;
+        }
+        if (!isDelimiter()) {
+            if (!stExpression()) {
+                throw "Syntax error: expected expression or delimiter in output operator but neither is found"s;
+            } else { // Expression
+            }
+        } else { // Delimeter
+            movLexem();
+        }
+    }
+}
+
+bool SyntaxAnalyzator::stBreakOperator() {
+    auto [cur, num] = movLexem();
+    if (cur != "break") {
+        throw "Syntax error: expected break"s;
+    }
+    std::tie(cur, num) = movLexem();
+    if (cur != ";") {
+        throw "Syntax error: expected ; after break"s;
+    }
+    return true;
+}
+
+bool SyntaxAnalyzator::stContinueOperator() {
+    auto [cur, num] = movLexem();
+    if (cur != "conrinue") {
+        throw "Syntax error: expected continue"s;
+    }
+    std::tie(cur, num) = movLexem();
+    if (cur != ";") {
+        throw "Syntax error: expected ; after continue"s;
+    }
+    return true;
+}
+
+
+bool SyntaxAnalyzator::stInitAtom() {
+    if (isNumber()) {
+        movLexem();
+        return true;
+    }
+    if (isBool()) {
+        movLexem();
+        return true;
+    }
+    auto [cur, num] = movLexem();
+    if (cur != "!") {
+        throw "Syntax error: expected ! when tried to find initial atom but "s + (num ? cur : "nothing"s) + "is found"s;
+    }
+    if (stAtom())
+        return true;
+    // else exception
 }
 
 bool SyntaxAnalyzator::stAtom() {
-    //std::cout << "atom" << std::endl;
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stInitAtom()) return true; // InitAtom
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stName()) { // Name[Expression]
-        auto [cur, num] = getLexem();
+    auto [cur, num] = getLexem();
+    if (cur == "!" || isNumber() || isBool()) {
+        if (stInitAtom()) {
+            return true;
+        } // else exception
+    }
+    if (cur == "(") {
+        movLexem();
+        if (stExpression()) {
+            std::tie(cur, num) = movLexem();
+            if (cur != ")") {
+                throw "Syntax error: expected ) after expression"s;
+            } else {
+                return true;
+            }
+        } // else exception
+    }
+    if (isName()) {
+        movLexem();
+        std::tie(cur, num) = getLexem();
+        if (cur == "(") {
+            if (stFunctionTail()) {
+                return true; // function call
+            } // else exception
+        }
         if (cur == "[") {
-            if (stExpression()) {
-                std::tie(cur, num) = getLexem();
-                if (cur == "]") return true;
+            if (stArrayTail()) {
+                return true; // array access call
             }
         }
+        return true;
     }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stName()) return true; // Name
-    mainLexer_->jumpToCell(beforeTriesCell);
-    auto [cur, num] = getLexem();
-    if (cur == "(") {
-        if (stExpression()) {
-            std::tie(cur, num) = getLexem();
-            if (cur == ")") return true; // (Expression)
-        }
-    }
-    return false;
+    throw "Syntax error: incorrect atom"s;
 }
 
-bool SyntaxAnalyzator::stIncrement() {
-    auto [cur, num] = getLexem();
-    if (cur != "--" && cur != "++") return false;
-    return true;
-}
-bool SyntaxAnalyzator::stPriority0(){
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    auto [cur, num] = getLexem();
-    if (cur == "+" || cur == "-") {
-        if (stAtom()) // Where else?
-            return true;
-        else
-            return false;
+bool SyntaxAnalyzator::stFunctionTail() {
+    auto [cur, num] = movLexem();
+    if (cur != "(") {
+        throw "Syntax error: expected ( before function call"s;
     }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stAtom()) {
-        auto beforeTriesCell1 = mainLexer_->getCurrentLexCell();
-        if (stIncrement())
+    std::tie(cur, num) = getLexem();
+    if (cur == ")") {
+        movLexem();
+        return true;
+    }
+    stExpression();
+    while (true) {
+        std::tie(cur, num) = movLexem();
+        if (cur == ")")
             return true;
-        else {
-            mainLexer_->jumpToCell(beforeTriesCell1);
-            return true;
+        else if (cur == ",") {
+            stExpression();
+            continue;
+        } else {
+            throw "Syntax error: expected ) or , in function call"s;
         }
     }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stIncrement()) {
-        if (stAtom()) return true;
+}
+bool SyntaxAnalyzator::stArrayTail() {
+    auto [cur, num] = movLexem();
+    if (cur != "[") {
+        throw "Syntax error: expected [ before array\'s element access"s;
     }
-    //mainLexer_->jumpToCell(beforeTriesCell);
-    return false;
+    stExpression();
+    std::tie(cur, num) = movLexem();
+    if (cur != "]") {
+        throw "Syntax error: expected ] after array\'s element access"s;
+    }
+    return true;
+}
+
+bool SyntaxAnalyzator::stPriority0(){
+    if (isSign()) {
+        movLexem();
+        stAtom();
+        return true;
+    }
+    if (isIncrement()) {
+        movLexem();
+        //        if (!isName()) {
+        //            throw "Syntax error: expected name after increment"s;
+        //        }
+        stAtom();
+        return true;
+    }
+    //    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
+    //    movLexem();
+    //    if (isIncrement()) {
+    //        mainLexer_->jumpToCell(beforeTriesCell);
+    //        if (isName()) {
+    //            movLexem();
+    //            if (isIncrement()) {
+    //                return true;
+    //            } else {
+    //                throw "Syntax error: expected increment after name"s;
+    //            }
+    //        } else {
+    //            throw "Syntax error: expected name before increment"s;
+    //        }
+    //    }
+    stAtom();
+    if (isIncrement()) {
+        movLexem();
+    }
+    return true;
 }
 
 bool SyntaxAnalyzator::stPriority1() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stPriority0())
-        if (stOperation1())
-            if (stPriority1()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority0()) return true;
-    return false;
+    if (stPriority0()) {
+        if (isOperation1()) {
+            movLexem();
+            if (stPriority1()) {
+                return true;
+            }
+        }
+        return true;
+    } // else exception
 }
 
 bool SyntaxAnalyzator::stPriority2() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
     if (stPriority1()) {
-        if (stOperation2()) {
-            if (stPriority2()) return true;
+        if (isOperation2()) {
+            movLexem();
+            if (stPriority2()) {
+                return true;
+            }
         }
-    }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority1()) return true;
-    return false;
+        return true;
+    } // else exception
 }
 
 bool SyntaxAnalyzator::stPriority3() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stPriority2())
-        if (stOperation3())
-            if (stPriority3()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority2()) return true;
-    return false;
+    if (stPriority2()) {
+        if (isOperation3()) {
+            movLexem();
+            if (stPriority3()) {
+                return true;
+            }
+        }
+        return true;
+    } // else exception
 }
 
 bool SyntaxAnalyzator::stPriority4() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stPriority3())
-        if (stOperation4())
-            if (stPriority4()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority3()) return true;
-    return false;
+    if (stPriority3()) {
+        if (isOperation4()) {
+            movLexem();
+            if (stPriority4()) {
+                return true;
+            }
+        }
+        return true;
+    } // else exception
 }
 
 bool SyntaxAnalyzator::stPriority5() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
     if (stPriority4()) {
         auto [cur, num] = getLexem();
-        if (cur == "&")
-            if (stPriority5()) return true;
-    }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority4()) return true;
-    return false;
+        if (cur == "&") {
+            movLexem();
+            if (stPriority5()) {
+                return true;
+            }
+        }
+        return true;
+    } // else exception
 }
 
 bool SyntaxAnalyzator::stPriority6() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
     if (stPriority5()) {
         auto [cur, num] = getLexem();
-        if (cur == "|")
-            if (stPriority6()) return true;
-    }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority5()) return true;
-    return false;
+        if (cur == "|") {
+            movLexem();
+            if (stPriority6()) {
+                return true;
+            }
+        }
+        return true;
+    } // else exception
 }
 
 bool SyntaxAnalyzator::stPriority7() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
     if (stPriority6()) {
         auto [cur, num] = getLexem();
-        if (cur == "^")
-            if (stPriority7()) return true;
-    }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority6()) return true;
-    return false;
-}
-
-bool SyntaxAnalyzator::stInitAtomBool() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stBool()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    auto [cur, num] = getLexem();
-    if (cur != "!") return false;
-    if (!stAtomBool()) return false;
-    return true;
-}
-
-bool SyntaxAnalyzator::stAtomBool() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stInitAtomBool()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stName()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    auto [cur, num] = getLexem();
-    if (cur == "(")
-        if (stExpression()) {
-            std::tie(cur, num) = getLexem();
-            if (cur == ")") return true;
+        if (cur == "^") {
+            movLexem();
+            if (stPriority7()) {
+                return true;
+            }
         }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority7()) return true;
-    return false;
+        return true;
+    } // else exception
 }
 
-bool SyntaxAnalyzator::stPriority1Bool() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stAtomBool()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stAtomBool())
-        if (stOperation3())
-            if (stPriority1Bool()) return true;
-    return false;
-}
-
-bool SyntaxAnalyzator::stPriority2Bool() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stPriority1Bool()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority1Bool())
-        if (stOperation4())
-            if (stPriority2Bool()) return true;
-    return false;
-}
-
-bool SyntaxAnalyzator::stPriority3Bool() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stPriority2Bool()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stPriority2Bool()) {
+bool SyntaxAnalyzator::stPriority8() {
+    if (stPriority7()) {
         auto [cur, num] = getLexem();
-        if (cur == "&&")
-            if (stPriority3Bool()) return true;
-    }
-    return false;
+        if (cur == "&&") {
+            movLexem();
+            if (stPriority8()) {
+                return true;
+            }
+        }
+        return true;
+    } // else exception
 }
 
-bool SyntaxAnalyzator::stPriority4Bool() {
-    auto beforeTrieCell = mainLexer_->getCurrentLexCell();
-    if (stPriority3Bool()) return true;
-    mainLexer_->jumpToCell(beforeTrieCell);
-    if (stPriority3Bool()) {
+bool SyntaxAnalyzator::stPriority9() {
+    if (stPriority8()) {
         auto [cur, num] = getLexem();
-        if (cur == "||")
-            if (stPriority4Bool()) return true;
-    }
-    return false;
+        if (cur == "||") {
+            movLexem();
+            if (stPriority9()) {
+                return true;
+            }
+        }
+        return true;
+    } // else exception
+}
+
+bool SyntaxAnalyzator::stPriority10() {
+    if (stPriority9()) {
+        auto [cur, num] = getLexem();
+        if (cur == "=") {
+            movLexem();
+            if (stPriority10()) {
+                return true;
+            }
+        }
+        return true;
+    } // else exception
 }
 
 bool SyntaxAnalyzator::stExpression() {
-    //std::cout << "expression" << std::endl;
-    auto beforeTrieCell = mainLexer_->getCurrentLexCell();
-    if (stPriority7()) return true;
-    mainLexer_->jumpToCell(beforeTrieCell);
-    if (stPriority4Bool()) return true;
-    mainLexer_->jumpToCell(beforeTrieCell);
-    if (stName()) {
-        auto [cur, num] = getLexem();
-        if (cur == "=") {
-            beforeTrieCell = mainLexer_->getCurrentLexCell();
-            if (stPriority7()) return true;
-            mainLexer_->jumpToCell(beforeTrieCell);
-            if (stPriority4Bool()) return true;
-        }
-    }
-    return false;
-}
-
-bool SyntaxAnalyzator::stExpressionOperator() {
-    if (!stExpression()) return false;
-    auto [cur, num] = getLexem();
-    if (cur != ";") return false;
+    //    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
+    //    movLexem();
+    //    auto [cur, num] = getLexem();
+    //    mainLexer_->jumpToCell(beforeTriesCell);
+    //    if (cur == "=") {
+    //        if (isName()) {
+    //            movLexem();
+    //            std::tie(cur, num) = movLexem();
+    //            if (cur == "=") {
+    //                stPriority9();
+    //                return true;
+    //            } else {
+    //                throw "Syntax error: expected = in assignent"s;
+    //            }
+    //        } else {
+    //            throw "Syntax error: expected name in assignent"s;
+    //        }
+    //    }
+    stPriority10();
     return true;
 }
 
-bool SyntaxAnalyzator::stCycleOperator() {
-    auto beforeTrieCell = mainLexer_->getCurrentLexCell();
-    if (stForOperator()) return true;
-    mainLexer_->jumpToCell(beforeTrieCell);
-    if (stForAutoOperator()) return true;
-    mainLexer_->jumpToCell(beforeTrieCell);
-    if (stWhileOperator()) return true;
-    mainLexer_->jumpToCell(beforeTrieCell);
-    if (stDoWhileOperator()) return true;
-    return false;
+bool SyntaxAnalyzator::stExpressionOperator() {
+    stExpression();
+    auto [cur, num] = movLexem();
+    if (cur != ";") {
+        throw "Syntax error: expected ; at the end of expression operator"s;
+    }
+    return true;
 }
 
+
+bool SyntaxAnalyzator::stConditionalOperator() {
+    auto [cur, num] = movLexem();
+    if (cur != "if") {
+        throw "Syntax error: expected if in conditional (if) operator"s;
+    }
+    std::tie(cur, num) = movLexem();
+    if (cur != "(") {
+        throw "Syntax error: expected ( in conditional (if) operator"s;
+    }
+    stExpression();
+    std::tie(cur, num) = movLexem();
+    if (cur != ")") {
+        throw "Syntax error: expected ) in conditional (if) operator"s;
+    }
+    stOperator();
+    while (true) {
+        std::tie(cur, num) = getLexem();
+        if (cur != "elif") {
+            break;
+        }
+        movLexem();
+        std::tie(cur, num) = movLexem();
+        if (cur != "(") {
+            throw "Syntax error: expected ( in conditional (elif) operator"s;
+        }
+        stExpression();
+        std::tie(cur, num) = movLexem();
+        if (cur != ")") {
+            throw "Syntax error: expected ) in conditional (elif) operator"s;
+        }
+        stOperator();
+    }
+    std::tie(cur, num) = getLexem();
+    if (cur != "else") {
+        return true;
+    }
+    movLexem();
+    stOperator();
+}
 bool SyntaxAnalyzator::stWhileOperator() {
-    auto [cur, num] = getLexem();
-    if (cur != "while") return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "(") return false;
-    if (!stExpression()) return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ")") return false;
-    if (!stOperator()) return false;
+    auto [cur, num] = movLexem();
+    if (cur != "while") {
+        throw "Syntax error: expected while in while-cycle operator"s;
+    }
+    std::tie(cur, num) = movLexem();
+    if (cur != "(") {
+        throw "Syntax error: expected ( in while-cycle operator"s;
+    }
+    stExpression();
+    std::tie(cur, num) = movLexem();
+    if (cur != ")") {
+        throw "Syntax error: expected ) in while-cycle operator"s;
+    }
+    stOperator();
     return true;
 }
 
 bool SyntaxAnalyzator::stDoWhileOperator() {
-    auto [cur, num] = getLexem();
-    if (cur != "do") return false;
-    if (!stOperator()) return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "while") return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "(") return false;
-    if (!stExpression()) return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ")") return false;
+    auto [cur, num] = movLexem();
+    if (cur != "do") {
+        throw "Syntax error: expected do in do-while-cycle operator"s;
+    }
+    stOperator();
+    std::tie(cur, num) = movLexem();
+    if (cur != "while") {
+        throw "Syntax error: expected while in do-while-cycle operator"s;
+    }
+    std::tie(cur, num) = movLexem();
+    if (cur != "(") {
+        throw "Syntax error: expected ( in do-while-cycle operator"s;
+    }
+    stExpression();
+    std::tie(cur, num) = movLexem();
+    if (cur != ")") {
+        throw "Syntax error: expected ) in do-while-cycle operator"s;
+    }
     return true;
 }
+
 
 bool SyntaxAnalyzator::stForOperator() {
-    auto [cur, num] = getLexem();
-    if (cur != "for") return false;
-    //std::cout << "a1" << std::endl;
-    std::tie(cur, num) = getLexem();
-    if (cur != "(") return false;
-    //std::cout << "a2" << std::endl;
-    if (!stDeclaration()) return false;
-    //std::cout << "a3" << std::endl;
-    //std::tie(cur, num) = getLexem();
-    //if (cur != ";") return false;
-    //std::cout << "a4" << std::endl;
-    if (!stExpression()) return false;
-    //std::cout << "a5" << std::endl;
-    std::tie(cur, num) = getLexem();
-    if (cur != ";") return false;
-    //std::cout << "a6" << std::endl;
-    if (!stExpression()) return false;
-    //std::cout << "a7" << std::endl;
-    std::tie(cur, num) = getLexem();
-    if (cur != ")") return false;
-    //std::cout << "a8" << std::endl;
-    if (!stOperator()) return false;
-    //std::cout << "a9" << std::endl;
+    auto [cur, num] = movLexem();
+    if (cur != "for") {
+        throw "Syntax error: expected for in for-cycle operator"s;
+    }
+    std::tie(cur, num) = movLexem();
+    if (cur != "(") {
+        throw "Syntax error: expected ( in for-cycle operator"s;
+    }
+    stDeclaration();
+    stExpression();
+    std::tie(cur, num) = movLexem();
+    if (cur != ";") {
+        throw "Syntax error: expected ; after expression in for-cycle operator"s;
+    }
+    stExpression();
+    std::tie(cur, num) = movLexem();
+    if (cur != ")") {
+        throw "Syntax error: expected ) after expression in for-cycle operator"s;
+    }
+    stOperator();
     return true;
 }
 
-bool SyntaxAnalyzator::stForAutoOperator() {
+bool SyntaxAnalyzator::stCycleOperator() {
     auto [cur, num] = getLexem();
-    if (cur != "for") return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "(") return false;
-    auto beforeTrieCell = mainLexer_->getCurrentLexCell();
-    if (!stType()) {
-        mainLexer_->jumpToCell(beforeTrieCell);
-        if (!stName()) return false;
+    if (cur == "for") {
+        stForOperator();
+    } else if (cur == "while") {
+        stWhileOperator();
+    } else if (cur == "do") {
+        stDoWhileOperator();
     } else {
-        if (!stName()) return false;
+        throw "Syntax error: expected cycle"s;
     }
-    std::tie(cur, num) = getLexem();
-    if (cur != ":") return false;
-    if (!stName()) return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ")") return false;
-    if (!stOperator()) return false;
-    return true;
-}
-bool SyntaxAnalyzator::stConditionalOperator() {
-    auto [cur, num] = getLexem();
-    if (cur != "if") return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "(") return false;
-    if (!stExpression()) return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ")") return false;
-    if (!stOperator()) return false;
-    while (true) {
-        auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-        std::tie(cur, num) = getLexem();
-        if (cur != "elif") {
-            mainLexer_->jumpToCell(beforeTriesCell);
-            break;
-        }
-        std::tie(cur, num) = getLexem();
-        if (cur != "(") return false;
-        if (!stExpression()) return false;
-        std::tie(cur, num) = getLexem();
-        if (cur != ")") return false;
-        if (!stOperator()) return false;
-    }
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    std::tie(cur, num) = getLexem();
-    if (cur != "else") {
-        mainLexer_->jumpToCell(beforeTriesCell);
-        return true;
-    }
-    if (!stOperator())
-        return false;
-    return true;
 }
 
 bool SyntaxAnalyzator::stSection() {
-
-    if (stName()) {
-        auto beforeTriesCell = mainLexer_->getCurrentLexCell();
+    if (isName()) {
+        movLexem();
         auto [cur, num] = getLexem();
-        auto beforeTriesCell2 = mainLexer_->getCurrentLexCell();
-        auto [cur2, num2] = getLexem();
-        std::cerr << cur2 << " ?" << std::endl;
-        mainLexer_->jumpToCell(beforeTriesCell2);
         if (cur == "=") {
-            if (!stExpression())
-                return false;
+            movLexem();
+            stExpression();
             return true;
             //std::cout << "a!!!!" << std::endl;
         } else if (cur == "[") {
-            if (!stExpression())
-                return false;
-            std::tie(cur, num) = getLexem();
-            if (cur != "]")
-                return false;
+            movLexem();
+            stExpression();
+            std::tie(cur, num) = movLexem();
+            if (cur != "]") {
+                throw "Syntax error: expected ] at the end of section"s;
+            }
             return true;
         } else {
-            mainLexer_->jumpToCell(beforeTriesCell);
             return true;
         }
     }
@@ -615,171 +645,193 @@ bool SyntaxAnalyzator::stSection() {
 }
 
 bool SyntaxAnalyzator::stDeclaration() {
-    if (!stType())
-        return false;
+    if (!isType()) {
+        throw "Syntax error: expected typename in declaration"s;
+    }
+    movLexem();
     if (!stSection())
         return false;
     while (true) {
         auto [cur, num] = getLexem();
-        std::cerr << cur << "!  " << std::endl;
-        if (cur == ";")
+        if (cur == ";") {
+            movLexem();
             return true;
+        }
         if (cur == ",") {
-            if (!stSection())
-                return false;
+            movLexem();
+            stSection();
+            continue;
         } else {
-            return false;
+            throw "Syntax error: expected another section or end of declaration but neither is found"s;
         }
     }
 }
 
 bool SyntaxAnalyzator::stFunction() {
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (!stType()) {
-        mainLexer_->jumpToCell(beforeTriesCell);
-        auto [cur, num] = getLexem();
-        if (cur != "void")
-            return false;
-    }
-    beforeTriesCell = mainLexer_->getCurrentLexCell();
     auto [cur, num] = getLexem();
-    if (cur == "main")
-        return false;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (!stName())
-        return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "(")
-        return false;
-    beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (!stType()) {
-        mainLexer_->jumpToCell(beforeTriesCell);
-        std::tie(cur, num) = getLexem();
-        if (cur != ")")
-            return false;
-        else
-            return stOperator();
+    if (!isType() && cur != "void") {
+        throw "Syntax error: didn't find return's type of function"s;
+    }
+    movLexem();
+    if (!isName()) {
+        throw "Syntax error: didn't find name of function"s;
+    }
+    movLexem();
+    std::tie(cur, num) = movLexem();
+    if (cur != "(") {
+        throw "Syntax error: expected ( in declaration of function"s;
+    }
+    if (!isType()) {
+        std::tie(cur, num) = movLexem();
+        if (cur != ")") {
+            "Syntax error: expected ) in declaration of function"s;
+        } else {
+            return stCompoundOperator();
+        }
     } else {
-        if (!stName())
-            return false;
+        movLexem();
+        if (!isName()) {
+            throw "Syntax error: expected name in declaration (input) of function"s;
+        }
+        movLexem();
     }
     while (true) {
-        beforeTriesCell = mainLexer_->getCurrentLexCell();
-        std::tie(cur, num) = getLexem();
+        std::tie(cur, num) = movLexem();
         if (cur == ")")
-            return stOperator();
+            return stCompoundOperator();
         if (cur == ",") {
-            if (!stType())
-                return false;
-            if (!stName())
-                return false;
+            if (!isType())
+                throw "Syntax error: expected type in declaration (input) of function"s;
+            movLexem();
+            if (!isName())
+                throw "Syntax error: expected name in declaration (input) of function"s;
+            movLexem();
         } else {
-            return false;
+            throw "Syntax error: expected , or ) in declaration of function"s;
         }
     }
 }
 
-bool SyntaxAnalyzator::stFunctionCall() {
-    if (!stName())
-        return false;
-    auto [cur, num] = getLexem();
-    if (cur != "(")
-        return false;
-    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    std::tie(cur, num) = getLexem();
-    if (cur == ")") {
-        std::tie(cur, num) = getLexem();
-        return cur == ";";
+bool SyntaxAnalyzator::stFunctionCallOperator() {
+    if (!isName()) {
+        throw "Syntax error: expected name of function in function call"s;
     }
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (!stExpression())
-        return false;
-    while (true) {
-        beforeTriesCell = mainLexer_->getCurrentLexCell();
-        std::tie(cur, num) = getLexem();
-        if (cur == ")") {
-            std::tie(cur, num) = getLexem();
-            return cur == ";";
-        }
-        if (cur == ",") {
-            if (!stExpression())
-                return false;
-        } else
-            return false;
+    movLexem();
+    stFunctionTail();
+    auto [cur, num] = movLexem();
+    if (cur != ";") {
+        throw "Syntax error: expected ; after function call"s;
     }
+    return true;
 }
 
 bool SyntaxAnalyzator::stProgram() {
     while (true) {
         auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-        if (!stDeclaration()) {
-            mainLexer_->jumpToCell(beforeTriesCell);
-        } else
-            continue;
-        if (!stFunction()) {
-            mainLexer_->jumpToCell(beforeTriesCell);
-            break;
+        auto [cur, num] = movLexem();
+        if (cur == "int") {
+            std::tie(cur, num) = movLexem();
+            if (cur == "main") {
+                std::tie(cur, num) = movLexem();
+                if (cur != "(") {
+                    throw "Syntax error: expected ( in main call"s;
+                }
+                std::tie(cur, num) = movLexem();
+                if (cur != ")") {
+                    throw "Syntax error: expected ) in main call"s;
+                }
+                stCompoundOperator();
+                return true;
+            }
+        }
+        mainLexer_->jumpToCell(beforeTriesCell);
+        movLexem();
+        movLexem();
+        std::tie(cur, num) = getLexem();
+        mainLexer_->jumpToCell(beforeTriesCell);
+        if (cur == "(") {
+            stFunction();
         } else {
-            continue;
+            stDeclaration();
         }
     }
-    auto [cur, num] = getLexem();
-    if (cur != "int")
-        return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "main")
-        return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != "(")
-        return false;
-    std::tie(cur, num) = getLexem();
-    if (cur != ")")
-        return false;
-    if (!stCompoundOperator())
-        return false;
-    return true;
 }
 
 bool SyntaxAnalyzator::stOperator() {
+    auto [cur, num] = getLexem();
+    if (isType()) {
+        stDeclaration();
+        return true;
+    }
+    if (cur == "{") {
+        stCompoundOperator();
+        return true;
+    }
+    if (cur == "cin") {
+        stInputOperator();
+        return true;
+    }
+    if (cur == "cout") {
+        stOutputOperator();
+        return true;
+    }
+    if (cur == "return") {
+        stReturnOperator();
+        return true;
+    }
+    if (cur == "for" || cur == "while" || cur == "do") {
+        stCycleOperator();
+        return true;
+    }
+    if (cur == "if") {
+        stConditionalOperator();
+        return true;
+    }
+    if (cur == "break") {
+        stBreakOperator();
+        return true;
+    }
+    if (cur == "continue") {
+        stContinueOperator();
+        return true;
+    }
     auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    if (stCompoundOperator()) return true;
+    movLexem();
+    std::tie(cur, num) = getLexem();
     mainLexer_->jumpToCell(beforeTriesCell);
-    if (stOutput()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stInput()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stReturn()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stDeclaration()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stExpressionOperator()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stCycleOperator()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stConditionalOperator()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stBreak()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stContinue()) return true;
-    mainLexer_->jumpToCell(beforeTriesCell);
-    if (stFunctionCall()) return true;
-    return false;
+    if (cur == "(") {
+        stFunctionCallOperator();
+        return true;
+    }
+    stExpressionOperator();
+    return true;
 }
 
 bool SyntaxAnalyzator::stCompoundOperator() {
-    auto [cur, num] = getLexem();
-    if (cur != "{") return false;
-    while (true) {
-        auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-        std::tie(cur, num) = getLexem();
-        if (cur == "}") return true;
-        mainLexer_->jumpToCell(beforeTriesCell);
-        if (!stOperator()) return false;
+    auto [cur, num] = movLexem();
+    if (cur != "{") {
+        throw "Syntax error: expected { at the beginning of compound operator"s;
     }
+    while (true) {
+        std::tie(cur, num) = getLexem();
+        if (cur == "}") {
+            movLexem();
+            return true;
+        }
+        stOperator();
+    }
+    // else exception in stOperator()
 }
 
-bool SyntaxAnalyzator::work() {
-    return stProgram();
+std::string SyntaxAnalyzator::work() {
+    try {
+        auto s = stProgram();
+        if (getLexem().second != 0)
+            throw "Syntax error: something after main detected"s;
+        return s ? "OK" : "How are we here? This is error";
+    } catch (std::string s) {
+        return s;
+    }
 }
 
 SyntaxAnalyzator::SyntaxAnalyzator(LexicalAnalyzator *&mainLexer): mainLexer_(mainLexer) {
