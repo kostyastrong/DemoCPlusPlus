@@ -90,6 +90,9 @@ bool SyntaxAnalyzator::isDelimiter() {
 
 bool SyntaxAnalyzator::isName() {
     auto [cur, num] = getLexem();
+    if (num != 2) {
+        return false;
+    }
     bool check_first = cur[0] == '_' || (cur[0] >= 'a' && cur[0] <= 'z') ||
             (cur[0] >= 'A' && cur[0] <= 'Z');
     bool check_other = true;
@@ -207,7 +210,7 @@ bool SyntaxAnalyzator::stBreakOperator() {
 
 bool SyntaxAnalyzator::stContinueOperator() {
     auto [cur, num] = movLexem();
-    if (cur != "conrinue") {
+    if (cur != "continue") {
         throw "Syntax error: expected continue"s;
     }
     std::tie(cur, num) = movLexem();
@@ -641,7 +644,7 @@ bool SyntaxAnalyzator::stSection() {
             return true;
         }
     }
-    return false;
+    throw "Syntax error: expected section but haven't found"s;
 }
 
 bool SyntaxAnalyzator::stDeclaration() {
