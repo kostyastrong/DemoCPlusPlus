@@ -152,7 +152,13 @@ void LexicalAnalyzator::splitFile(const std::string& reserved,
 }
 
 std::pair<std::string, int> LexicalAnalyzator::getLexem() {
-    if (! memory_) return {nullptr, 0};
+    if (! memory_) return {"?", 0};
+    std::pair<std::string, int> ret = {memory_->lexem_, memory_->t_};
+    return ret;
+}
+
+std::pair<std::string, int> LexicalAnalyzator::movLexem() {
+    if (! memory_) return {"?", 0};
     std::pair<std::string, int> ret = {memory_->lexem_, memory_->t_};
     memory_ = memory_->next;
     return ret;
