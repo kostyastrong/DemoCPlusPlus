@@ -1,11 +1,13 @@
-#include<iomanip>
-
-int b[5][234][2];
-
-struct b{
-    int l$ = 5;
-};
+#include<iostream>
+using namespace std;
 
 int main() {
-    return 0;
+    int n = 2;
+    int m = -1*(-3);
+    cin >> n;
+    for (int i = 0; i < 1; ++i) {
+        cout << i +(+ ++n);
+    }
+
+    return 1;
 }

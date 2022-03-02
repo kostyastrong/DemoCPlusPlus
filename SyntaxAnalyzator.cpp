@@ -4,6 +4,7 @@
 
 #include "SyntaxAnalyzator.h"
 
+
 std::pair<std::string, int> SyntaxAnalyzator::getLexem() {
     return mainLexer_->getLexem();
 }
@@ -99,8 +100,8 @@ bool SyntaxAnalyzator::stDelimiter() {
 bool SyntaxAnalyzator::stName() {
     auto [cur, num] = getLexem();
     if (num == 2) return true;
-    /*return false;
-    bool check_first = cur[0] == '_' || (cur[0] >= 'a' && cur[0] <= 'z') ||
+    return false;
+    /*bool check_first = cur[0] == '_' || (cur[0] >= 'a' && cur[0] <= 'z') ||
             (cur[0] >= 'A' && cur[0] <= 'Z');
     bool check_other = true;
     for (int i = 1; i < static_cast<int>(cur.size()); ++i) {

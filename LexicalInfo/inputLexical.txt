@@ -1,5 +1,5 @@
-int func() {}}
+void func(int a){}
 
 int main() {
-    return {0;}
+    cout << 4;
 }
