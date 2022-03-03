@@ -14,6 +14,8 @@ public:
     std::pair<std::string, int> movLexem();
     std::pair<std::string, int> getLexem();
     [[nodiscard]] std::string errLastLex() const;
+    [[nodiscard]] std::string errCurLex() const;
+    [[nodiscard]] std::pair<int, int> curWhere() const;
     std::string work();
     LexicalAnalyzator* mainLexer_;
 private:
@@ -59,7 +61,7 @@ private:
     bool stDeclaration();
     bool stCycleOperator();
     bool stSection(bool declar);
-    bool stFunction();
+    bool stFunction(bool declar);
     bool stFunctionCallOperator();
     bool stProgram();
 };

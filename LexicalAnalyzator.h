@@ -59,7 +59,9 @@ public:
     void jumpToCell(Cell* memorizedCell);
     void pbInMemory(Cell*);
     std::pair<int, int> getPosPrevCell();
+    std::pair<int, int> getPosCurCell();
     std::string errLastLex();
+    std::string errCurLex();
 
 private:
     int curType_ = 0;

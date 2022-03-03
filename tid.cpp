@@ -32,6 +32,8 @@ void tid::noVar(const var& a) {
         std::cout << "Error on:" << a.line_ << ", prev. declaration on: " << prev;
         exit(0);
     }
+    if (par_ == nullptr) return;
+    par_->noVar(a);
 }
 
 void tid::tidChild(std::string name) {
@@ -43,10 +45,15 @@ tid::tid(std::string name, tid* par) {
     swap(name, name_);
 }
 
-var::var(int line, std::string type) {
-    line_ = line;
+var::var(int line, int pos, std::string type, std::string name): line_(line), pos_(pos) {
     std::swap(type, type_);
+    std::swap(name, name_);
 }
 
 var::var() {}
+
+var::var(std::pair<int, int> where, std::string type, std::string name): line_(where.first), pos_(where.second) {
+    std::swap(type, type_);
+    std::swap(name, name_);
+}
 

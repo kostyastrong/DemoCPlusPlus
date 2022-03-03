@@ -6,7 +6,7 @@
 
 using namespace std::literals::string_literals;
 
-//tid* curtid = new tid("global");
+tid* curtid = new tid("global");
 
 std::pair<std::string, int> SyntaxAnalyzator::movLexem() {
     return mainLexer_->movLexem();
@@ -19,9 +19,13 @@ std::string SyntaxAnalyzator::errLastLex() const {
     return mainLexer_->errLastLex();
 }
 
+std::string SyntaxAnalyzator::errCurLex() const {
+    return mainLexer_->errCurLex();
+}
+
 bool SyntaxAnalyzator::isType() {
     auto [cur, num] = getLexem();
-    if (cur != "int" && cur != "char" && cur != "double" && cur != "float" && cur != "bool")
+    if (cur != "int" && cur != "char" && cur != "double" && cur != "float" && cur != "bool" && cur != "string")
         return false;
     return true;
 }
@@ -113,7 +117,7 @@ bool SyntaxAnalyzator::isName(bool declar=false) {  // why for this implementati
         return false;
 
     if (declar) {
-
+        curtid->insert(var(curWhere(), cur, "string"));
     }
     return true;
 }
@@ -121,7 +125,7 @@ bool SyntaxAnalyzator::isName(bool declar=false) {  // why for this implementati
 bool SyntaxAnalyzator::stReturnOperator() {
     auto [cur, num] = movLexem();
     if (cur != "return") {
-        throw "Syntax error: expected return, but "s + (num ? cur : "nothing"s) + "is found\n"s + errLastLex();
+        throw "Syntax error: expected return, but "s + (num ? cur : "nothing"s) + "is found\n"s + errCurLex();
     }
     std::tie(cur, num) = getLexem();
     if (cur == ";") {
@@ -133,23 +137,23 @@ bool SyntaxAnalyzator::stReturnOperator() {
         if (cur == ";") {
             return true;
         } else {
-            throw "Syntax error: expected ; after return operator, but "s + (num ? cur : "nothing"s) + "is found\n"s + errLastLex();
+            throw "Syntax error: expected ; after return operator, but "s + (num ? cur : "nothing"s) + "is found\n"s + errCurLex();
         }
     }
-    throw "Syntax error: expected simple return or expression in return but neither is found\n"s + errLastLex();
+    throw "Syntax error: expected simple return or expression in return but neither is found\n"s + errCurLex();
 }
 
 bool SyntaxAnalyzator::stInputOperator() {
     auto [cur, num] = movLexem();
     if (cur != "cin") {
-        throw "Syntax error: expected cin in input operator\n"s + errLastLex();
+        throw "Syntax error: expected cin in input operator\n"s + errCurLex();
     }
     std::tie(cur, num) = movLexem();
     if (cur != ">>") {
-        throw "Syntax error: expected >> in input operator\n"s + errLastLex();
+        throw "Syntax error: expected >> in input operator\n"s + errCurLex();
     }
     if (!isName()) {
-        throw "Syntax error: expected name in input operator\n"s + errLastLex();
+        throw "Syntax error: expected name in input operator\n"s + errCurLex();
     } else {
         movLexem();
     }
@@ -159,10 +163,10 @@ bool SyntaxAnalyzator::stInputOperator() {
             break;
         }
         if (cur != ">>") {
-            throw "Syntax error: expected >> in input operator\n"s + errLastLex();
+            throw "Syntax error: expected >> in input operator\n"s + errCurLex();
         }
         if (!isName()) {
-            throw "Syntax error: expected name in input operator\n"s + errLastLex();
+            throw "Syntax error: expected name in input operator\n"s + errCurLex();
         } else {
             movLexem();
         }
@@ -173,15 +177,15 @@ bool SyntaxAnalyzator::stInputOperator() {
 bool SyntaxAnalyzator::stOutputOperator() {
     auto [cur, num] = movLexem();
     if (cur != "cout") {
-        throw "Syntax error: expected cout in output operator\n"s + errLastLex();
+        throw "Syntax error: expected cout in output operator\n"s + errCurLex();
     }
     std::tie(cur, num) = movLexem();
     if (cur != "<<") {
-        throw "Syntax error: expected << in output operator\n"s + errLastLex();
+        throw "Syntax error: expected << in output operator\n"s + errCurLex();
     }
     if (!isDelimiter()) {
         if (!stExpression()) {
-            throw "Syntax error: expected expression or delimiter in output operator but neither is found\n"s + errLastLex();
+            throw "Syntax error: expected expression or delimiter in output operator but neither is found\n"s + errCurLex();
         } else { // Expression
         }
     } else { // Delimeter
@@ -193,11 +197,11 @@ bool SyntaxAnalyzator::stOutputOperator() {
             return true;
         }
         if (cur != "<<") {
-            throw "Syntax error: expected << in output operator\n"s + errLastLex();
+            throw "Syntax error: expected << in output operator\n"s + errCurLex();
         }
         if (!isDelimiter()) {
             if (!stExpression()) {
-                throw "Syntax error: expected expression or delimiter in output operator but neither is found\n"s + errLastLex();
+                throw "Syntax error: expected expression or delimiter in output operator but neither is found\n"s + errCurLex();
             } else { // Expression
             }
         } else { // Delimeter
@@ -209,11 +213,11 @@ bool SyntaxAnalyzator::stOutputOperator() {
 bool SyntaxAnalyzator::stBreakOperator() {
     auto [cur, num] = movLexem();
     if (cur != "break") {
-        throw "Syntax error: expected break\n"s + errLastLex();
+        throw "Syntax error: expected break\n"s + errCurLex();
     }
     std::tie(cur, num) = movLexem();
     if (cur != ";") {
-        throw "Syntax error: expected ; after break\n"s + errLastLex();
+        throw "Syntax error: expected ; after break\n"s + errCurLex();
     }
     return true;
 }
@@ -221,11 +225,11 @@ bool SyntaxAnalyzator::stBreakOperator() {
 bool SyntaxAnalyzator::stContinueOperator() {
     auto [cur, num] = movLexem();
     if (cur != "continue") {
-        throw "Syntax error: expected continue\n"s + errLastLex();
+        throw "Syntax error: expected continue\n"s + errCurLex();
     }
     std::tie(cur, num) = movLexem();
     if (cur != ";") {
-        throw "Syntax error: expected ; after continue\n"s + errLastLex();
+        throw "Syntax error: expected ; after continue\n"s + errCurLex();
     }
     return true;
 }
@@ -242,7 +246,7 @@ bool SyntaxAnalyzator::stInitAtom() {
     }
     auto [cur, num] = movLexem();
     if (cur != "!") {
-        throw "Syntax error: expected ! when tried to find initial atom but "s + (num ? cur : "nothing"s) + "is found\n"s + errLastLex();
+        throw "Syntax error: expected ! when tried to find initial atom but "s + (num ? cur : "nothing"s) + "is found\n"s + errCurLex();
     }
     if (stAtom())
         return true;
@@ -261,7 +265,7 @@ bool SyntaxAnalyzator::stAtom() {
         if (stExpression()) {
             std::tie(cur, num) = movLexem();
             if (cur != ")") {
-                throw "Syntax error: expected ) after expression\n"s + errLastLex();
+                throw "Syntax error: expected ) after expression\n"s + errCurLex();
             } else {
                 return true;
             }
@@ -282,13 +286,13 @@ bool SyntaxAnalyzator::stAtom() {
         }
         return true;
     }
-    throw "Syntax error: incorrect atom\n"s + errLastLex();
+    throw "Syntax error: incorrect atom\n"s + errCurLex();
 }
 
 bool SyntaxAnalyzator::stFunctionTail() {
     auto [cur, num] = movLexem();
     if (cur != "(") {
-        throw "Syntax error: expected ( before function call\n"s + errLastLex();
+        throw "Syntax error: expected ( before function call\n"s + errCurLex();
     }
     std::tie(cur, num) = getLexem();
     if (cur == ")") {
@@ -304,19 +308,19 @@ bool SyntaxAnalyzator::stFunctionTail() {
             stExpression();
             continue;
         } else {
-            throw "Syntax error: expected ) or , in function call\n"s + errLastLex();
+            throw "Syntax error: expected ) or , in function call\n"s + errCurLex();
         }
     }
 }
 bool SyntaxAnalyzator::stArrayTail() {
     auto [cur, num] = movLexem();
     if (cur != "[") {
-        throw "Syntax error: expected [ before array\'s element access\n"s + errLastLex();
+        throw "Syntax error: expected [ before array\'s element access\n"s + errCurLex();
     }
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != "]") {
-        throw "Syntax error: expected ] after array\'s element access\n"s + errLastLex();
+        throw "Syntax error: expected ] after array\'s element access\n"s + errCurLex();
     }
     return true;
 }
@@ -330,7 +334,7 @@ bool SyntaxAnalyzator::stPriority0(){
     if (isIncrement()) {
         movLexem();
         //        if (!isName()) {
-        //            throw "Syntax error: expected name after increment\n"s + errLastLex();
+        //            throw "Syntax error: expected name after increment\n"s + errCurLex();
         //        }
         stAtom();
         return true;
@@ -344,10 +348,10 @@ bool SyntaxAnalyzator::stPriority0(){
     //            if (isIncrement()) {
     //                return true;
     //            } else {
-    //                throw "Syntax error: expected increment after name\n"s + errLastLex();
+    //                throw "Syntax error: expected increment after name\n"s + errCurLex();
     //            }
     //        } else {
-    //            throw "Syntax error: expected name before increment\n"s + errLastLex();
+    //            throw "Syntax error: expected name before increment\n"s + errCurLex();
     //        }
     //    }
     stAtom();
@@ -496,10 +500,10 @@ bool SyntaxAnalyzator::stExpression() {
     //                stPriority9();
     //                return true;
     //            } else {
-    //                throw "Syntax error: expected = in assignent\n"s + errLastLex();
+    //                throw "Syntax error: expected = in assignent\n"s + errCurLex();
     //            }
     //        } else {
-    //            throw "Syntax error: expected name in assignent\n"s + errLastLex();
+    //            throw "Syntax error: expected name in assignent\n"s + errCurLex();
     //        }
     //    }
     stPriority10();
@@ -510,7 +514,7 @@ bool SyntaxAnalyzator::stExpressionOperator() {
     stExpression();
     auto [cur, num] = movLexem();
     if (cur != ";") {
-        throw "Syntax error: expected ; at the end of expression operator\n"s + errLastLex();
+        throw "Syntax error: expected ; at the end of expression operator\n"s + errCurLex();
     }
     return true;
 }
@@ -519,16 +523,16 @@ bool SyntaxAnalyzator::stExpressionOperator() {
 bool SyntaxAnalyzator::stConditionalOperator() {
     auto [cur, num] = movLexem();
     if (cur != "if") {
-        throw "Syntax error: expected if in conditional (if) operator\n"s + errLastLex();
+        throw "Syntax error: expected if in conditional (if) operator\n"s + errCurLex();
     }
     std::tie(cur, num) = movLexem();
     if (cur != "(") {
-        throw "Syntax error: expected ( in conditional (if) operator\n"s + errLastLex();
+        throw "Syntax error: expected ( in conditional (if) operator\n"s + errCurLex();
     }
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ")") {
-        throw "Syntax error: expected ) in conditional (if) operator\n"s + errLastLex();
+        throw "Syntax error: expected ) in conditional (if) operator\n"s + errCurLex();
     }
     stOperator();
     while (true) {
@@ -539,12 +543,12 @@ bool SyntaxAnalyzator::stConditionalOperator() {
         movLexem();
         std::tie(cur, num) = movLexem();
         if (cur != "(") {
-            throw "Syntax error: expected ( in conditional (elif) operator\n"s + errLastLex();
+            throw "Syntax error: expected ( in conditional (elif) operator\n"s + errCurLex();
         }
         stExpression();
         std::tie(cur, num) = movLexem();
         if (cur != ")") {
-            throw "Syntax error: expected ) in conditional (elif) operator\n"s + errLastLex();
+            throw "Syntax error: expected ) in conditional (elif) operator\n"s + errCurLex();
         }
         stOperator();
     }
@@ -558,16 +562,16 @@ bool SyntaxAnalyzator::stConditionalOperator() {
 bool SyntaxAnalyzator::stWhileOperator() {
     auto [cur, num] = movLexem();
     if (cur != "while") {
-        throw "Syntax error: expected while in while-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected while in while-cycle operator\n"s + errCurLex();
     }
     std::tie(cur, num) = movLexem();
     if (cur != "(") {
-        throw "Syntax error: expected ( in while-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected ( in while-cycle operator\n"s + errCurLex();
     }
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ")") {
-        throw "Syntax error: expected ) in while-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected ) in while-cycle operator\n"s + errCurLex();
     }
     stOperator();
     return true;
@@ -576,21 +580,21 @@ bool SyntaxAnalyzator::stWhileOperator() {
 bool SyntaxAnalyzator::stDoWhileOperator() {
     auto [cur, num] = movLexem();
     if (cur != "do") {
-        throw "Syntax error: expected do in do-while-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected do in do-while-cycle operator\n"s + errCurLex();
     }
     stOperator();
     std::tie(cur, num) = movLexem();
     if (cur != "while") {
-        throw "Syntax error: expected while in do-while-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected while in do-while-cycle operator\n"s + errCurLex();
     }
     std::tie(cur, num) = movLexem();
     if (cur != "(") {
-        throw "Syntax error: expected ( in do-while-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected ( in do-while-cycle operator\n"s + errCurLex();
     }
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ")") {
-        throw "Syntax error: expected ) in do-while-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected ) in do-while-cycle operator\n"s + errCurLex();
     }
     return true;
 }
@@ -599,22 +603,22 @@ bool SyntaxAnalyzator::stDoWhileOperator() {
 bool SyntaxAnalyzator::stForOperator() {
     auto [cur, num] = movLexem();
     if (cur != "for") {
-        throw "Syntax error: expected for in for-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected for in for-cycle operator\n"s + errCurLex();
     }
     std::tie(cur, num) = movLexem();
     if (cur != "(") {
-        throw "Syntax error: expected ( in for-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected ( in for-cycle operator\n"s + errCurLex();
     }
     stDeclaration();
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ";") {
-        throw "Syntax error: expected ; after expression in for-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected ; after expression in for-cycle operator\n"s + errCurLex();
     }
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ")") {
-        throw "Syntax error: expected ) after expression in for-cycle operator\n"s + errLastLex();
+        throw "Syntax error: expected ) after expression in for-cycle operator\n"s + errCurLex();
     }
     stOperator();
     return true;
@@ -629,12 +633,12 @@ bool SyntaxAnalyzator::stCycleOperator() {
     } else if (cur == "do") {
         stDoWhileOperator();
     } else {
-        throw "Syntax error: expected cycle\n"s + errLastLex();
+        throw "Syntax error: expected cycle\n"s + errCurLex();
     }
 }
 
 bool SyntaxAnalyzator::stSection(bool declar=false) {
-    if (isName()) {
+    if (isName(declar)) {
         movLexem();
         auto [cur, num] = getLexem();
         if (cur == "=") {
@@ -647,19 +651,19 @@ bool SyntaxAnalyzator::stSection(bool declar=false) {
             stExpression();
             std::tie(cur, num) = movLexem();
             if (cur != "]") {
-                throw "Syntax error: expected ] at the end of section\n"s + errLastLex();
+                throw "Syntax error: expected ] at the end of section\n"s + errCurLex();
             }
             return true;
         } else {
             return true;
         }
     }
-    throw "Syntax error: expected section but haven't found\n"s + errLastLex();
+    throw "Syntax error: expected section but haven't found\n"s + errCurLex();
 }
 
 bool SyntaxAnalyzator::stDeclaration() {
     if (!isType()) {
-        throw "Syntax error: expected typename in declaration\n"s + errLastLex();
+        throw "Syntax error: expected typename in declaration\n"s + errCurLex();
     }
     movLexem();
     if (!stSection())
@@ -675,36 +679,36 @@ bool SyntaxAnalyzator::stDeclaration() {
             stSection();
             continue;
         } else {
-            throw "Syntax error: expected another section or end of declaration but neither is found\n"s + errLastLex();
+            throw "Syntax error: expected another section or end of declaration but neither is found\n"s + errCurLex();
         }
     }
 }
 
-bool SyntaxAnalyzator::stFunction() {
+bool SyntaxAnalyzator::stFunction(bool declar=false) {
     auto [cur, num] = getLexem();
     if (!isType() && cur != "void") {
-        throw "Syntax error: didn't find return's type of function\n"s + errLastLex();
+        throw "Syntax error: didn't find return's type of function\n"s + errCurLex();
     }
     movLexem();
     if (!isName()) {
-        throw "Syntax error: didn't find name of function\n"s + errLastLex();
+        throw "Syntax error: didn't find name of function\n"s + errCurLex();
     }
     movLexem();
     std::tie(cur, num) = movLexem();
     if (cur != "(") {
-        throw "Syntax error: expected ( in declaration of function\n"s + errLastLex();
+        throw "Syntax error: expected ( in declaration of function\n"s + errCurLex();
     }
     if (!isType()) {
         std::tie(cur, num) = movLexem();
         if (cur != ")") {
-            throw "Syntax error: expected ) in declaration of function\n"s + errLastLex();
+            throw "Syntax error: expected ) in declaration of function\n"s + errCurLex();
         } else {
             return stCompoundOperator();
         }
     } else {
         movLexem();
         if (!isName()) {
-            throw "Syntax error: expected name in declaration (input) of function\n"s + errLastLex();
+            throw "Syntax error: expected name in declaration (input) of function\n"s + errCurLex();
         }
         movLexem();
     }
@@ -714,26 +718,26 @@ bool SyntaxAnalyzator::stFunction() {
             return stCompoundOperator();
         if (cur == ",") {
             if (!isType())
-                throw "Syntax error: expected type in declaration (input) of function\n"s + errLastLex();
+                throw "Syntax error: expected type in declaration (input) of function\n"s + errCurLex();
             movLexem();
             if (!isName())
-                throw "Syntax error: expected name in declaration (input) of function\n"s + errLastLex();
+                throw "Syntax error: expected name in declaration (input) of function\n"s + errCurLex();
             movLexem();
         } else {
-            throw "Syntax error: expected , or ) in declaration of function\n"s + errLastLex();
+            throw "Syntax error: expected , or ) in declaration of function\n"s + errCurLex();
         }
     }
 }
 
 bool SyntaxAnalyzator::stFunctionCallOperator() {
     if (!isName()) {
-        throw "Syntax error: expected name of function in function call\n"s + errLastLex();
+        throw "Syntax error: expected name of function in function call\n"s + errCurLex();
     }
     movLexem();
     stFunctionTail();
     auto [cur, num] = movLexem();
     if (cur != ";") {
-        throw "Syntax error: expected ; after function call\n"s + errLastLex();
+        throw "Syntax error: expected ; after function call\n"s + errCurLex();
     }
     return true;
 }
@@ -747,11 +751,11 @@ bool SyntaxAnalyzator::stProgram() {
             if (cur == "main") {
                 std::tie(cur, num) = movLexem();
                 if (cur != "(") {
-                    throw "Syntax error: expected ( in main call\n"s + errLastLex();
+                    throw "Syntax error: expected ( in main call\n"s + errCurLex();
                 }
                 std::tie(cur, num) = movLexem();
                 if (cur != ")") {
-                    throw "Syntax error: expected ) in main call\n"s + errLastLex();
+                    throw "Syntax error: expected ) in main call\n"s + errCurLex();
                 }
                 stCompoundOperator();
                 return true;
@@ -823,7 +827,7 @@ bool SyntaxAnalyzator::stOperator() {
 bool SyntaxAnalyzator::stCompoundOperator() {
     auto [cur, num] = movLexem();
     if (cur != "{") {
-        throw "Syntax error: expected { at the beginning of compound operator\n"s + errLastLex();
+        throw "Syntax error: expected { at the beginning of compound operator\n"s + errCurLex();
     }
     while (true) {
         std::tie(cur, num) = getLexem();
@@ -840,7 +844,7 @@ std::string SyntaxAnalyzator::work() {
     try {
         auto s = stProgram();
         if (getLexem().second != 0)
-            throw "Syntax error: something after main detected\n"s + errLastLex();
+            throw "Syntax error: something after main detected\n"s + errCurLex();
         return s ? "OK" : "How are we here? This is error";
     } catch (std::string s) {
         return s;
@@ -848,4 +852,8 @@ std::string SyntaxAnalyzator::work() {
 }
 
 SyntaxAnalyzator::SyntaxAnalyzator(LexicalAnalyzator *&mainLexer): mainLexer_(mainLexer) {
+}
+
+std::pair<int, int> SyntaxAnalyzator::curWhere() const {
+    return mainLexer_->getPosCurCell();
 }

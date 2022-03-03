@@ -272,6 +272,19 @@ std::string LexicalAnalyzator::errLastLex() {
     return "line: " + std::to_string(line) + " place: " + std::to_string(place);
 }
 
+std::pair<int, int> LexicalAnalyzator::getPosCurCell() {
+    if (! memory_) return {0, 0};
+    return memory_->where();
+}
+
+std::string LexicalAnalyzator::errCurLex() {
+    if (! memory_) return {0, 0};
+    auto [line, place] = memory_->where();
+    place -= memory_->lexem_.size();
+    place = std::max(0, place);
+    return "line: " + std::to_string(line) + " place: " + std::to_string(place);
+}
+
 std::pair<int, int> Cell::where() {
     return {line_, index_};
 }
