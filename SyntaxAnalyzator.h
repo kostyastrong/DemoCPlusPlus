@@ -5,6 +5,7 @@
 #ifndef COMPILER_SYNTAXANALYZATOR_H
 #define COMPILER_SYNTAXANALYZATOR_H
 #include "LexicalAnalyzator.h"
+#include "tid.h"
 
 class SyntaxAnalyzator {
 public:
@@ -12,6 +13,7 @@ public:
     explicit SyntaxAnalyzator(LexicalAnalyzator *& mainLexer);
     std::pair<std::string, int> movLexem();
     std::pair<std::string, int> getLexem();
+    [[nodiscard]] std::string errLastLex() const;
     std::string work();
     LexicalAnalyzator* mainLexer_;
 private:
@@ -25,7 +27,7 @@ private:
     bool isOperation3();
     bool isOperation4();
     bool isDelimiter();
-    bool isName();
+    bool isName(bool declar);
     bool stExpression();
     bool stReturnOperator();
     bool stInputOperator();
@@ -56,11 +58,10 @@ private:
     bool stForOperator();
     bool stDeclaration();
     bool stCycleOperator();
-    bool stSection();
+    bool stSection(bool declar);
     bool stFunction();
     bool stFunctionCallOperator();
     bool stProgram();
-
 };
 
 

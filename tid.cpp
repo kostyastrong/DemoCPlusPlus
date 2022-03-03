@@ -43,7 +43,10 @@ tid::tid(std::string name, tid* par) {
     swap(name, name_);
 }
 
-var::var(int line) {
+var::var(int line, std::string type) {
     line_ = line;
+    std::swap(type, type_);
 }
+
+var::var() {}
 

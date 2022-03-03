@@ -1,5 +1,3 @@
-
 int main() {
-    int for = 5;
-    return 0;
+    string k = "";
 }

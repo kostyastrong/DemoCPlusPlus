@@ -16,6 +16,7 @@ const std::string statesTransactions = LEXPATH + "lexicalSettings.txt";
 const int stateNotExist = -100;
 const int stateNotEnd = -1;
 
+
 std::unordered_set<std::string>* LexicalAnalyzator::getWords(const std::string& reserved) {  // get reserved words
     std::unordered_set<std::string>* ret = new std::unordered_set<std::string>;
     std::ifstream inFile;
@@ -260,6 +261,18 @@ void LexicalAnalyzator::pbInMemory(Cell * adding) {
     }
 }
 
+std::pair<int, int> LexicalAnalyzator::getPosPrevCell() {
+    Cell*& prev = memory_->prev;
+    if (! prev) return {0, 0};
+    return prev->where();
+}
+
+std::string LexicalAnalyzator::errLastLex() {
+    auto [line, place] = getPosPrevCell();
+    return "line: " + std::to_string(line) + " place: " + std::to_string(place);
+}
+
 std::pair<int, int> Cell::where() {
     return {line_, index_};
 }
+

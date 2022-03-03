@@ -58,6 +58,8 @@ public:
     Cell* getCurrentLexCell();
     void jumpToCell(Cell* memorizedCell);
     void pbInMemory(Cell*);
+    std::pair<int, int> getPosPrevCell();
+    std::string errLastLex();
 
 private:
     int curType_ = 0;

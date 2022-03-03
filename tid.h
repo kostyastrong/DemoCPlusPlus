@@ -12,8 +12,9 @@
 
 struct var{
     std::string type_, name_;
-    int line_;
-    explicit var(int line);
+    int line_ = -1;
+    explicit var(int line, std::string type);
+    var();
 };
 
 
