@@ -629,7 +629,7 @@ bool SyntaxAnalyzator::stForOperator() {
     if (cur != "(") {
         throw "Syntax error: expected ( in for-cycle operator\n"s + errCurLex();
     }
-    stDeclaration();
+    stDeclarationFor();
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ";") {
@@ -703,6 +703,45 @@ bool SyntaxAnalyzator::stDeclaration() {
         }
     }
 }
+
+bool SyntaxAnalyzator::stDeclarationFor() {
+    if (!isType()) {
+        if (!stSection())
+            return false;
+        while (true) {
+            auto [cur, num] = getLexem();
+            if (cur == ";") {
+                movLexem();
+                return true;
+            }
+            if (cur == ",") {
+                movLexem();
+                stSection();
+                continue;
+            } else {
+                throw "Syntax error: expected another section or end of declaration but neither is found\n"s + errCurLex();
+            }
+        }
+    }
+    movLexem();
+    if (!stSection(true))
+        return false;
+    while (true) {
+        auto [cur, num] = getLexem();
+        if (cur == ";") {
+            movLexem();
+            return true;
+        }
+        if (cur == ",") {
+            movLexem();
+            stSection();
+            continue;
+        } else {
+            throw "Syntax error: expected another section or end of declaration but neither is found\n"s + errCurLex();
+        }
+    }
+}
+
 
 bool SyntaxAnalyzator::stFunction(bool declar=false) {
     auto [cur, num] = getLexem();

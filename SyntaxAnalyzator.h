@@ -59,6 +59,7 @@ private:
     bool stDoWhileOperator();
     bool stForOperator();
     bool stDeclaration();
+    bool stDeclarationFor();
     bool stCycleOperator();
     bool stSection(bool declar);
     bool stFunction(bool declar);

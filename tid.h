@@ -27,7 +27,8 @@ public:
     void del(const std::string& name);
     int findVar(const std::string& name);  // as for now, we don't support multinaming
     void checkid(const var&);
-    void noVar(const var&);
+    void noVarTree(const var&);
+    void noVarCur(const var&);
     void tidChild(std::string name);
     tid* child = nullptr;
     tid* par_ = nullptr;  // to get upper

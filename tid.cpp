@@ -8,7 +8,7 @@
 
 void tid::insert(const var& a) {
     std::string name = a.name_;
-    noVar(a);
+    noVarCur(a);
     mem_[a.name_] = a;
 }
 
@@ -26,7 +26,7 @@ int tid::findVar(const std::string& name) {
     else return par_->findVar(name);
 }
 
-void tid::checkid(const var& a) {
+void tid::checkid(const var& a) {  // using var
     int prev = findVar(a.name_);
     if (prev == -1) {
         std::cout << "Using of undeclared variable\nError on the line: " << a.line_;
@@ -34,14 +34,22 @@ void tid::checkid(const var& a) {
     }
 }
 
-void tid::noVar(const var& a) {
+void tid::noVarCur(const var& a) {
+    auto it = mem_.find(a.name_);
+    if (it == mem_.end()) return;
+    int prev = it->second.line_;
+    std::cout << "Error on:" << a.line_ << ", prev. declaration on: " << prev;
+    exit(0);
+}
+
+void tid::noVarTree(const var& a) {
     int prev = findVar(a.name_);
     if (prev != -1) {
         std::cout << "Error on:" << a.line_ << ", prev. declaration on: " << prev;
         exit(0);
     }
     if (par_ == nullptr) return;
-    par_->noVar(a);
+    par_->noVarTree(a);
 }
 
 void tid::tidChild(std::string name="") {
