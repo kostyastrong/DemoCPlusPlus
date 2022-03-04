@@ -19,15 +19,23 @@ void tid::del(const std::string& name) {
     par_->del(name);
 }
 
-int tid::checkid(const std::string& name) {
+int tid::findVar(const std::string& name) {
     auto res = mem_.find(name);
     if (res != mem_.end()) return res->second.line_;
     if (par_ == nullptr) return -1;
-    else return par_->checkid(name);
+    else return par_->findVar(name);
+}
+
+void tid::checkid(const var& a) {
+    int prev = findVar(a.name_);
+    if (prev == -1) {
+        std::cout << "Using of undeclared variable\nError on the line: " << a.line_;
+        exit(0);
+    }
 }
 
 void tid::noVar(const var& a) {
-    int prev = checkid(a.name_);
+    int prev = findVar(a.name_);
     if (prev != -1) {
         std::cout << "Error on:" << a.line_ << ", prev. declaration on: " << prev;
         exit(0);
@@ -36,8 +44,10 @@ void tid::noVar(const var& a) {
     par_->noVar(a);
 }
 
-void tid::tidChild(std::string name) {
-    childs_.push_back(new tid(std::move(name), this));
+void tid::tidChild(std::string name="") {
+    delete child;  // even with nullptr
+    child = new tid(std::move(name), this);
+    // childs_.push_back(new tid(std::move(name), this));
 }
 
 tid::tid(std::string name, tid* par) {
@@ -56,4 +66,5 @@ var::var(std::pair<int, int> where, std::string type, std::string name): line_(w
     std::swap(type, type_);
     std::swap(name, name_);
 }
+
 

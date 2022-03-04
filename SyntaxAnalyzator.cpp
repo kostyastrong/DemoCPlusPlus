@@ -8,6 +8,15 @@ using namespace std::literals::string_literals;
 
 tid* curtid = new tid("global");
 
+void enterScope(tid*& cur=curtid, std::string name=""){
+    cur->tidChild(name);
+    cur = cur->child;
+}
+
+void exitScope(tid*& cur=curtid) {
+    cur = cur->par_;
+}
+
 std::pair<std::string, int> SyntaxAnalyzator::movLexem() {
     return mainLexer_->movLexem();
 }
@@ -116,8 +125,11 @@ bool SyntaxAnalyzator::isName(bool declar=false) {  // why for this implementati
     if (!(check_first && check_other))
         return false;
 
+    var a = var(curWhere(), "string", cur);
     if (declar) {
-        curtid->insert(var(curWhere(), cur, "string"));
+        curtid->insert(a);
+    } else {
+        curtid->checkid(a);
     }
     return true;
 }
@@ -534,7 +546,9 @@ bool SyntaxAnalyzator::stConditionalOperator() {
     if (cur != ")") {
         throw "Syntax error: expected ) in conditional (if) operator\n"s + errCurLex();
     }
+    enterScope(curtid);
     stOperator();
+    exitScope(curtid);
     while (true) {
         std::tie(cur, num) = getLexem();
         if (cur != "elif") {
@@ -550,15 +564,21 @@ bool SyntaxAnalyzator::stConditionalOperator() {
         if (cur != ")") {
             throw "Syntax error: expected ) in conditional (elif) operator\n"s + errCurLex();
         }
+        enterScope();
         stOperator();
+        exitScope();
     }
     std::tie(cur, num) = getLexem();
     if (cur != "else") {
         return true;
     }
     movLexem();
+    enterScope();
     stOperator();
+    exitScope();
+    return true;
 }
+
 bool SyntaxAnalyzator::stWhileOperator() {
     auto [cur, num] = movLexem();
     if (cur != "while") {
@@ -666,7 +686,7 @@ bool SyntaxAnalyzator::stDeclaration() {
         throw "Syntax error: expected typename in declaration\n"s + errCurLex();
     }
     movLexem();
-    if (!stSection())
+    if (!stSection(true))
         return false;
     while (true) {
         auto [cur, num] = getLexem();
@@ -829,10 +849,12 @@ bool SyntaxAnalyzator::stCompoundOperator() {
     if (cur != "{") {
         throw "Syntax error: expected { at the beginning of compound operator\n"s + errCurLex();
     }
+    enterScope(curtid);
     while (true) {
         std::tie(cur, num) = getLexem();
         if (cur == "}") {
             movLexem();
+            exitScope(curtid);
             return true;
         }
         stOperator();

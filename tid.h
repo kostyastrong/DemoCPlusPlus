@@ -18,7 +18,6 @@ struct var{
     var();
 };
 
-
 class tid {
 public:
     std::string name_;
@@ -26,15 +25,16 @@ public:
 
     void insert(const var& a);
     void del(const std::string& name);
-    int checkid(const std::string& name);  // as for now, we don't support multinaming
+    int findVar(const std::string& name);  // as for now, we don't support multinaming
+    void checkid(const var&);
     void noVar(const var&);
     void tidChild(std::string name);
+    tid* child = nullptr;
+    tid* par_ = nullptr;  // to get upper
 
 private:
     std::unordered_map<std::string, var> mem_;
-    std::vector<tid*> childs_;  // in case we have objects, we need a few tids
-    tid* par_ = nullptr;  // to get upper
+    // std::vector<tid*> childs_;  // in case we have objects, we need a few tids
 };
-
 
 #endif //DEMOCPLUSPLUS_TID_H
