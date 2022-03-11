@@ -52,8 +52,8 @@ private:
     bool stPriority9();
     bool stPriority10();
     bool stExpressionOperator();
-    bool stOperator();
-    bool stCompoundOperator();
+    bool stOperator(bool enteredScope=false);
+    bool stCompoundOperator(bool enteredScope=false);
     bool stConditionalOperator();
     bool stWhileOperator();
     bool stDoWhileOperator();

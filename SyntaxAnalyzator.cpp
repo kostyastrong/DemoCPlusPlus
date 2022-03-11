@@ -546,9 +546,9 @@ bool SyntaxAnalyzator::stConditionalOperator() {
     if (cur != ")") {
         throw "Syntax error: expected ) in conditional (if) operator\n"s + errCurLex();
     }
-    enterScope(curtid);
+    enterScope();
     stOperator();
-    exitScope(curtid);
+    exitScope();
     while (true) {
         std::tie(cur, num) = getLexem();
         if (cur != "elif") {
@@ -640,13 +640,14 @@ bool SyntaxAnalyzator::stForOperator() {
     if (cur != ")") {
         throw "Syntax error: expected ) after expression in for-cycle operator\n"s + errCurLex();
     }
-    stOperator();
+    stOperator(true);
     return true;
 }
 
 bool SyntaxAnalyzator::stCycleOperator() {
     auto [cur, num] = getLexem();
     if (cur == "for") {
+        enterScope();
         stForOperator();
     } else if (cur == "while") {
         stWhileOperator();
@@ -749,7 +750,7 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
         throw "Syntax error: didn't find return's type of function\n"s + errCurLex();
     }
     movLexem();
-    if (!isName()) {
+    if (!isName(true)) {
         throw "Syntax error: didn't find name of function\n"s + errCurLex();
     }
     movLexem();
@@ -810,11 +811,11 @@ bool SyntaxAnalyzator::stProgram() {
             if (cur == "main") {
                 std::tie(cur, num) = movLexem();
                 if (cur != "(") {
-                    throw "Syntax error: expected ( in main call\n"s + errCurLex();
+                    throw "Syntax error: expected ( in main call\n"s + errLastLex();
                 }
                 std::tie(cur, num) = movLexem();
                 if (cur != ")") {
-                    throw "Syntax error: expected ) in main call\n"s + errCurLex();
+                    throw "Syntax error: expected ) in main call\n"s + errLastLex();
                 }
                 stCompoundOperator();
                 return true;
@@ -826,21 +827,21 @@ bool SyntaxAnalyzator::stProgram() {
         std::tie(cur, num) = getLexem();
         mainLexer_->jumpToCell(beforeTriesCell);
         if (cur == "(") {
-            stFunction();
+            stFunction(true);
         } else {
             stDeclaration();
         }
     }
 }
 
-bool SyntaxAnalyzator::stOperator() {
+bool SyntaxAnalyzator::stOperator(bool enteredScope) {
     auto [cur, num] = getLexem();
     if (isType()) {
         stDeclaration();
         return true;
     }
     if (cur == "{") {
-        stCompoundOperator();
+        stCompoundOperator(enteredScope);
         return true;
     }
     if (cur == "cin") {
@@ -883,17 +884,18 @@ bool SyntaxAnalyzator::stOperator() {
     return true;
 }
 
-bool SyntaxAnalyzator::stCompoundOperator() {
+bool SyntaxAnalyzator::stCompoundOperator(bool enteredScope) {
     auto [cur, num] = movLexem();
     if (cur != "{") {
         throw "Syntax error: expected { at the beginning of compound operator\n"s + errCurLex();
     }
-    enterScope(curtid);
+    if (!enteredScope) enterScope();  // for example, we start sycle for earlier than brackets
+
     while (true) {
         std::tie(cur, num) = getLexem();
-        if (cur == "}") {
+        if (cur == "}") {  // we always close block with exit of scope no matter what
             movLexem();
-            exitScope(curtid);
+            exitScope();
             return true;
         }
         stOperator();
