@@ -7,6 +7,7 @@
 using namespace std::literals::string_literals;
 
 tid* curtid = new tid("global");
+typeStack* opStack = nullptr;  // the creation in syntaxAnalyzer::syntaxAnalyzer
 
 void enterScope(tid*& cur=curtid, std::string name=""){
     cur->tidChild(name);
@@ -107,7 +108,7 @@ bool SyntaxAnalyzator::isDelimiter() {
     return true;
 }
 
-bool SyntaxAnalyzator::isName(bool declar=false) {  // why for this implementation when we have num
+bool SyntaxAnalyzator::isName(bool declar=false, std::string t="") {  // why for this implementation when we have num
     auto [cur, num] = getLexem();
     if (num != 2) {
         return false;
@@ -127,6 +128,7 @@ bool SyntaxAnalyzator::isName(bool declar=false) {  // why for this implementati
 
     var a = var(curWhere(), "string", cur);
     if (declar) {
+        a.type_ = std::move(t);
         curtid->insert(a);
     } else {
         curtid->checkid(a);
@@ -528,6 +530,7 @@ bool SyntaxAnalyzator::stExpressionOperator() {
     if (cur != ";") {
         throw "Syntax error: expected ; at the end of expression operator\n"s + errCurLex();
     }
+    opStack->memClear();
     return true;
 }
 
@@ -658,8 +661,8 @@ bool SyntaxAnalyzator::stCycleOperator() {
     }
 }
 
-bool SyntaxAnalyzator::stSection(bool declar=false) {
-    if (isName(declar)) {
+bool SyntaxAnalyzator::stSection(bool declar=false, std::string t="") {
+    if (isName(declar, std::move(t))) {
         movLexem();
         auto [cur, num] = getLexem();
         if (cur == "=") {
@@ -686,11 +689,12 @@ bool SyntaxAnalyzator::stDeclaration() {
     if (!isType()) {
         throw "Syntax error: expected typename in declaration\n"s + errCurLex();
     }
+    auto [cur, num] = getLexem();
     movLexem();
-    if (!stSection(true))
+    if (!stSection(true, cur))
         return false;
     while (true) {
-        auto [cur, num] = getLexem();
+        std::tie(cur, num) = getLexem();
         if (cur == ";") {
             movLexem();
             return true;
@@ -750,7 +754,7 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
         throw "Syntax error: didn't find return's type of function\n"s + errCurLex();
     }
     movLexem();
-    if (!isName(true)) {
+    if (!isName(declar, "func")) {
         throw "Syntax error: didn't find name of function\n"s + errCurLex();
     }
     movLexem();
@@ -758,6 +762,7 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
     if (cur != "(") {
         throw "Syntax error: expected ( in declaration of function\n"s + errCurLex();
     }
+    enterScope();
     if (!isType()) {
         std::tie(cur, num) = movLexem();
         if (cur != ")") {
@@ -766,21 +771,24 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
             return stCompoundOperator();
         }
     } else {
+        std::tie(cur, num) = getLexem();
         movLexem();
-        if (!isName()) {
+        if (!isName(true, cur)) {
             throw "Syntax error: expected name in declaration (input) of function\n"s + errCurLex();
         }
         movLexem();
     }
     while (true) {
         std::tie(cur, num) = movLexem();
-        if (cur == ")")
-            return stCompoundOperator();
+        if (cur == ")") {
+            return stCompoundOperator(true);
+        }
         if (cur == ",") {
             if (!isType())
                 throw "Syntax error: expected type in declaration (input) of function\n"s + errCurLex();
+            std::tie(cur, num) = getLexem();
             movLexem();
-            if (!isName())
+            if (!isName(true, cur))
                 throw "Syntax error: expected name in declaration (input) of function\n"s + errCurLex();
             movLexem();
         } else {
@@ -915,6 +923,7 @@ std::string SyntaxAnalyzator::work() {
 }
 
 SyntaxAnalyzator::SyntaxAnalyzator(LexicalAnalyzator *&mainLexer): mainLexer_(mainLexer) {
+    opStack = new typeStack(mainLexer_);
 }
 
 std::pair<int, int> SyntaxAnalyzator::curWhere() const {

@@ -1,3 +1,9 @@
+int f(int k, int a) {
+    k = 4;
+    return k;
+}
+
 int main() {
-    3 +4;
+    int m = 5;
+    f(4, 2);
 }

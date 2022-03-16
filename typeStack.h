@@ -8,13 +8,20 @@
 #include <deque>
 #include <string>
 
+
+
 class typeStack {
 public:
-    std::deque<std::string> mem_;
+    void memClear();
+    typeStack(LexicalAnalyzator*);
+    std::deque<std::string*> mem_;  // string pointers is faster
+    void insertOperator(std::string* operat);
+    void checkOp();
+    void checkBinOp();  // binary operations
+
 private:
     LexicalAnalyzator* mainLexer_ = nullptr;
     void lastEquality(std::string &a, std::string &b);
-    void checkOp();
 };
 
 

@@ -29,7 +29,7 @@ int tid::findVar(const std::string& name) {
 void tid::checkid(const var& a) {  // using var
     int prev = findVar(a.name_);
     if (prev == -1) {
-        std::cout << "Using of undeclared variable\nError on the line: " << a.line_;
+        std::cout << "Using an undeclared variable\nError on the line: " << a.line_;
         exit(0);
     }
 }

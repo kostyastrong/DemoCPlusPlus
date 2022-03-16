@@ -1,25 +1,28 @@
 //
 // Created by maincpp on 21.01.2022.
-    //
+//
 
-    #ifndef COMPILER_SYNTAXANALYZATOR_H
-    #define COMPILER_SYNTAXANALYZATOR_H
-    #include "LexicalAnalyzator.h"
-    #include "tid.h"
+#ifndef COMPILER_SYNTAXANALYZATOR_H
+#define COMPILER_SYNTAXANALYZATOR_H
+#include "LexicalAnalyzator.h"
+#include "tid.h"
+#include "typeStack.h"
 
-    class SyntaxAnalyzator {
-    public:
-        // memorize the string lexer on and index
-        explicit SyntaxAnalyzator(LexicalAnalyzator *& mainLexer);
-        std::pair<std::string, int> movLexem();
-        std::pair<std::string, int> getLexem();
-        [[nodiscard]] std::string errLastLex() const;
-        [[nodiscard]] std::string errCurLex() const;
-        [[nodiscard]] std::pair<int, int> curWhere() const;
-        std::string work();
-        LexicalAnalyzator* mainLexer_;
-    private:
-        bool isType();
+
+
+class SyntaxAnalyzator {
+public:
+    // memorize the string lexer on and index
+    explicit SyntaxAnalyzator(LexicalAnalyzator *& mainLexer);
+    std::pair<std::string, int> movLexem();
+    std::pair<std::string, int> getLexem();
+    [[nodiscard]] std::string errLastLex() const;
+    [[nodiscard]] std::string errCurLex() const;
+    [[nodiscard]] std::pair<int, int> curWhere() const;
+    std::string work();
+    LexicalAnalyzator* mainLexer_;
+private:
+    bool isType();
     bool isBool();
     bool isNumber();
     bool isSign();
@@ -29,7 +32,7 @@
     bool isOperation3();
     bool isOperation4();
     bool isDelimiter();
-    bool isName(bool declar);
+    bool isName(bool declar, std::string t);
     bool stExpression();
     bool stReturnOperator();
     bool stInputOperator();
@@ -61,7 +64,7 @@
     bool stDeclaration();
     bool stDeclarationFor();
     bool stCycleOperator();
-    bool stSection(bool declar);
+    bool stSection(bool declar, std::string t);
     bool stFunction(bool declar);
     bool stFunctionCallOperator();
     bool stProgram();
