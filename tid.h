@@ -25,8 +25,8 @@ public:
 
     void insert(const var& a);
     void del(const std::string& name);
-    int findVar(const std::string& name);  // as for now, we don't support multinaming
-    void checkid(const var&);
+    var* findVar(const std::string& name);  // as for now, we don't support multinaming
+    std::string checkid(const var&);
     void noVarTree(const var&);
     void noVarCur(const var&);
     void tidChild(std::string name);

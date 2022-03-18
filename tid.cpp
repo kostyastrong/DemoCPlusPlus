@@ -19,19 +19,22 @@ void tid::del(const std::string& name) {
     par_->del(name);
 }
 
-int tid::findVar(const std::string& name) {
+var* tid::findVar(const std::string& name) {
     auto res = mem_.find(name);
-    if (res != mem_.end()) return res->second.line_;
-    if (par_ == nullptr) return -1;
+    if (res != mem_.end()) return new var(res->second);
+    if (par_ == nullptr) return nullptr;
     else return par_->findVar(name);
 }
 
-void tid::checkid(const var& a) {  // using var
-    int prev = findVar(a.name_);
-    if (prev == -1) {
+std::string tid::checkid(const var& a) {  // using var
+    var* prev = findVar(a.name_);
+    if (!prev) {
         std::cout << "Using an undeclared variable\nError on the line: " << a.line_;
         exit(0);
     }
+    std::string ret = std::move(prev->type_);
+    delete prev;
+    return ret;
 }
 
 void tid::noVarCur(const var& a) {
@@ -43,8 +46,8 @@ void tid::noVarCur(const var& a) {
 }
 
 void tid::noVarTree(const var& a) {
-    int prev = findVar(a.name_);
-    if (prev != -1) {
+    var* prev = findVar(a.name_);
+    if (! prev) {
         std::cout << "Error on:" << a.line_ << ", prev. declaration on: " << prev;
         exit(0);
     }

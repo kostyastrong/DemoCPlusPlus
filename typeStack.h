@@ -15,7 +15,8 @@ public:
     void memClear();
     typeStack(LexicalAnalyzator*);
     std::deque<std::string*> mem_;  // string pointers is faster
-    void insertOperator(std::string* operat);
+    void pushtype(std::string*);
+    void pushop(std::string*);
     void checkOp();
     void checkBinOp();  // binary operations
 

@@ -24,7 +24,9 @@ public:
 private:
     bool isType();
     bool isBool();
-    bool isNumber();
+    bool isConstNumber();
+    bool isConstString();
+    bool isConst();
     bool isSign();
     bool isIncrement();
     bool isOperation1();
@@ -32,7 +34,7 @@ private:
     bool isOperation3();
     bool isOperation4();
     bool isDelimiter();
-    bool isName(bool declar, std::string t);
+    bool isName(bool declar, std::string t, bool putInStack);
     bool stExpression();
     bool stReturnOperator();
     bool stInputOperator();

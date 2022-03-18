@@ -48,19 +48,31 @@ bool SyntaxAnalyzator::isBool() {
     return true;
 }
 
-bool SyntaxAnalyzator::isNumber() {
+bool SyntaxAnalyzator::isConstNumber() {
     auto [cur, num] = getLexem();
-    if (num != 3) {
+    if (num != 3 || cur[0] > '9' || cur[0] < '0') {
         return false;
     }
     return true;
 }
 
+bool SyntaxAnalyzator::isConstString() {
+    auto [cur, num] = getLexem();
+    if (num != 3 || (cur[0] <= '9' && cur[0] >= '0')) {
+        return false;
+    }
+    return true;
+}
+
+bool SyntaxAnalyzator::isConst() {
+    return isConstNumber() || isConstString();
+}
 bool SyntaxAnalyzator::isSign() {
     auto [cur, num] = getLexem();
     if (cur != "+" && cur != "-") {
         return false;
     }
+    opStack->pushop(new std::string("_"));  // binary minus
     return true;
 }
 
@@ -69,6 +81,7 @@ bool SyntaxAnalyzator::isIncrement() {
     if (cur != "--" && cur != "++") {
         return false;
     }
+    opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
 
@@ -76,6 +89,7 @@ bool SyntaxAnalyzator::isOperation1() {
     auto [cur, num] = getLexem();
     if (cur != "*" && cur != "/" && cur != "%")
         return false;
+    opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
 
@@ -83,6 +97,7 @@ bool SyntaxAnalyzator::isOperation2() {
     auto [cur, num] = getLexem();
     if (cur != "+" && cur != "-")
         return false;
+    opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
 
@@ -90,6 +105,7 @@ bool SyntaxAnalyzator::isOperation3() {
     auto [cur, num] = getLexem();
     if (cur != "<" && cur != ">" && cur != "<=" && cur != ">=")
         return false;
+    opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
 
@@ -97,6 +113,7 @@ bool SyntaxAnalyzator::isOperation4() {
     auto [cur, num] = getLexem();
     if (cur != "==" && cur != "<>")
         return false;
+    opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
 
@@ -108,7 +125,7 @@ bool SyntaxAnalyzator::isDelimiter() {
     return true;
 }
 
-bool SyntaxAnalyzator::isName(bool declar=false, std::string t="") {  // why for this implementation when we have num
+bool SyntaxAnalyzator::isName(bool declar=false, std::string t="", bool putInStack = false) {  // why for this implementation when we have num
     auto [cur, num] = getLexem();
     if (num != 2) {
         return false;
@@ -126,12 +143,13 @@ bool SyntaxAnalyzator::isName(bool declar=false, std::string t="") {  // why for
     if (!(check_first && check_other))
         return false;
 
-    var a = var(curWhere(), "string", cur);
+    var a = var(curWhere(), std::move(t), cur);
     if (declar) {
-        a.type_ = std::move(t);
         curtid->insert(a);
+        if (putInStack) opStack->pushtype(new std::string(a.type_));
     } else {
-        curtid->checkid(a);
+        std::string* _ = new std::string(std::move(curtid->checkid(a)));
+        if (putInStack) opStack->pushtype(_);
     }
     return true;
 }
@@ -250,7 +268,7 @@ bool SyntaxAnalyzator::stContinueOperator() {
 
 
 bool SyntaxAnalyzator::stInitAtom() {
-    if (isNumber()) {
+    if (isConst()) {
         movLexem();
         return true;
     }
@@ -269,10 +287,29 @@ bool SyntaxAnalyzator::stInitAtom() {
 
 bool SyntaxAnalyzator::stAtom() {
     auto [cur, num] = getLexem();
-    if (cur == "!" || isNumber() || isBool()) {
+    if (cur == "!" ) {
         if (stInitAtom()) {
+            opStack->pushop(new std::string("!"));
             return true;
         } // else exception
+    }
+    if (isConstNumber()) {
+        if (stInitAtom()) {
+            opStack->pushtype(new std::string("int"));
+            return true;
+        }
+    }
+    if (isConstString()) {
+        if (stInitAtom()) {
+            opStack->pushtype(new std::string("string"));
+            return true;
+        }
+    }
+    if (isBool()) {
+        if (stInitAtom()) {
+            opStack->pushtype(new std::string("bool"));
+            return true;
+        }
     }
     if (cur == "(") {
         movLexem();
@@ -286,6 +323,9 @@ bool SyntaxAnalyzator::stAtom() {
         } // else exception
     }
     if (isName()) {
+        var a = var(curWhere(), "", cur);
+        std::string _ = std::move(curtid->checkid(a));
+        opStack->pushtype(new std::string(_));
         movLexem();
         std::tie(cur, num) = getLexem();
         if (cur == "(") {
@@ -428,6 +468,7 @@ bool SyntaxAnalyzator::stPriority5() {
         auto [cur, num] = getLexem();
         if (cur == "&") {
             movLexem();
+            opStack->pushop(new std::string("&"));
             if (stPriority5()) {
                 return true;
             }
@@ -441,6 +482,7 @@ bool SyntaxAnalyzator::stPriority6() {
         auto [cur, num] = getLexem();
         if (cur == "|") {
             movLexem();
+            opStack->pushop(new std::string("|"));
             if (stPriority6()) {
                 return true;
             }
@@ -454,6 +496,7 @@ bool SyntaxAnalyzator::stPriority7() {
         auto [cur, num] = getLexem();
         if (cur == "^") {
             movLexem();
+            opStack->pushop(new std::string("^"));
             if (stPriority7()) {
                 return true;
             }
@@ -467,6 +510,7 @@ bool SyntaxAnalyzator::stPriority8() {
         auto [cur, num] = getLexem();
         if (cur == "&&") {
             movLexem();
+            opStack->pushop(new std::string("&&"));
             if (stPriority8()) {
                 return true;
             }
@@ -480,6 +524,7 @@ bool SyntaxAnalyzator::stPriority9() {
         auto [cur, num] = getLexem();
         if (cur == "||") {
             movLexem();
+            opStack->pushop(new std::string("||"));
             if (stPriority9()) {
                 return true;
             }
@@ -493,6 +538,7 @@ bool SyntaxAnalyzator::stPriority10() {
         auto [cur, num] = getLexem();
         if (cur == "=") {
             movLexem();
+            opStack->pushop(new std::string("="));
             if (stPriority10()) {
                 return true;
             }
@@ -662,10 +708,11 @@ bool SyntaxAnalyzator::stCycleOperator() {
 }
 
 bool SyntaxAnalyzator::stSection(bool declar=false, std::string t="") {
-    if (isName(declar, std::move(t))) {
+    if (isName(declar, std::move(t), true)) {
         movLexem();
         auto [cur, num] = getLexem();
         if (cur == "=") {
+            opStack->pushop(new std::string("="));
             movLexem();
             stExpression();
             return true;
@@ -696,6 +743,7 @@ bool SyntaxAnalyzator::stDeclaration() {
     while (true) {
         std::tie(cur, num) = getLexem();
         if (cur == ";") {
+            opStack->memClear();
             movLexem();
             return true;
         }
@@ -716,6 +764,7 @@ bool SyntaxAnalyzator::stDeclarationFor() {
         while (true) {
             auto [cur, num] = getLexem();
             if (cur == ";") {
+                opStack->memClear();
                 movLexem();
                 return true;
             }
@@ -906,6 +955,7 @@ bool SyntaxAnalyzator::stCompoundOperator(bool enteredScope) {
             exitScope();
             return true;
         }
+        opStack->memClear();
         stOperator();
     }
     // else exception in stOperator()
