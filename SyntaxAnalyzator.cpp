@@ -8,6 +8,8 @@ using namespace std::literals::string_literals;
 
 tid* curtid = new tid("global");
 typeStack* opStack = nullptr;  // the creation in syntaxAnalyzer::syntaxAnalyzer
+bool describingFunc = false;
+std::string describingFuncName = "";
 
 void enterScope(tid*& cur=curtid, std::string name=""){
     cur->tidChild(name);
@@ -125,7 +127,7 @@ bool SyntaxAnalyzator::isDelimiter() {
     return true;
 }
 
-bool SyntaxAnalyzator::isName(bool declar=false, std::string t="", bool putInStack = false) {  // why for this implementation when we have num
+bool SyntaxAnalyzator::isName(bool declar=false, std::string t="", bool putInStack = false, bool func = false) {  // why for this implementation when we have num
     auto [cur, num] = getLexem();
     if (num != 2) {
         return false;
@@ -143,8 +145,18 @@ bool SyntaxAnalyzator::isName(bool declar=false, std::string t="", bool putInSta
     if (!(check_first && check_other))
         return false;
 
-    var a = var(curWhere(), std::move(t), cur);
+    var a = var(curWhere(), std::move(t), cur, func);
     if (declar) {
+        if (func) {
+            if (describingFunc) {
+                var* _ = curtid->findVar(describingFuncName);
+                if (_->type_ != "void") {
+                    throw "The previous function should return: " + _->type_ + "\n but doesn't return any";
+                }
+            }
+            describingFuncName = cur;
+            describingFunc = true;
+        }
         curtid->insert(a);
         if (putInStack) opStack->pushtype(new std::string(a.type_));
     } else {
@@ -154,19 +166,28 @@ bool SyntaxAnalyzator::isName(bool declar=false, std::string t="", bool putInSta
     return true;
 }
 
+
 bool SyntaxAnalyzator::stReturnOperator() {
     auto [cur, num] = movLexem();
     if (cur != "return") {
         throw "Syntax error: expected return, but "s + (num ? cur : "nothing"s) + "is found\n"s + errCurLex();
     }
     std::tie(cur, num) = getLexem();
+    var* a = curtid->findVar(describingFuncName);
     if (cur == ";") {
+        if (a->type_ != "void" && describingFuncName != "main") {
+            throw "The current function should return: " + a->type_ + "\n but doesn't return any" + errCurLex();
+        }
         movLexem();
         return true;
     }
+    opStack->pushtype(a->type_);
+    opStack->pushop("=");
+
     if (stExpression()) {
         std::tie(cur, num) = movLexem();
         if (cur == ";") {
+            describingFunc = false;
             return true;
         } else {
             throw "Syntax error: expected ; after return operator, but "s + (num ? cur : "nothing"s) + "is found\n"s + errCurLex();
@@ -323,14 +344,22 @@ bool SyntaxAnalyzator::stAtom() {
         } // else exception
     }
     if (isName()) {
-        var a = var(curWhere(), "", cur);
-        std::string _ = std::move(curtid->checkid(a));
-        opStack->pushtype(new std::string(_));
+        var a = var(curWhere(), "", cur, false);
+        std::string funcName = getLexem().first;
         movLexem();
         std::tie(cur, num) = getLexem();
         if (cur == "(") {
             if (stFunctionTail()) {
-                return true; // function call
+                var* _ = curtid->findVar(funcName);
+                if (!_) {
+                    throw "Semantic error: No declared before: " + errCurLex();
+                }
+                if (_->isfunc) {
+                    return true; // function call
+                }
+                else {
+                    throw "The last declaration of var is not function: " + errCurLex();
+                }
             } // else exception
         }
         if (cur == "[") {
@@ -338,6 +367,8 @@ bool SyntaxAnalyzator::stAtom() {
                 return true; // array access call
             }
         }
+        std::string _ = std::move(curtid->checkid(a));
+        opStack->pushtype(new std::string(_));
         return true;
     }
     throw "Syntax error: incorrect atom\n"s + errCurLex();
@@ -771,24 +802,28 @@ bool SyntaxAnalyzator::stDeclarationFor() {
             if (cur == ",") {
                 movLexem();
                 stSection();
+                opStack->memClear();
                 continue;
             } else {
                 throw "Syntax error: expected another section or end of declaration but neither is found\n"s + errCurLex();
             }
         }
     }
+    auto [cur, num] = getLexem();
     movLexem();
-    if (!stSection(true))
+    if (!stSection(true, cur))
         return false;
     while (true) {
         auto [cur, num] = getLexem();
         if (cur == ";") {
+            opStack->memClear();
             movLexem();
             return true;
         }
         if (cur == ",") {
             movLexem();
             stSection();
+            opStack->memClear();
             continue;
         } else {
             throw "Syntax error: expected another section or end of declaration but neither is found\n"s + errCurLex();
@@ -802,8 +837,9 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
     if (!isType() && cur != "void") {
         throw "Syntax error: didn't find return's type of function\n"s + errCurLex();
     }
+
     movLexem();
-    if (!isName(declar, "func")) {
+    if (!isName(declar, cur, false, true)) {
         throw "Syntax error: didn't find name of function\n"s + errCurLex();
     }
     movLexem();
@@ -866,6 +902,13 @@ bool SyntaxAnalyzator::stProgram() {
         if (cur == "int") {
             std::tie(cur, num) = movLexem();
             if (cur == "main") {
+                if (describingFunc) {
+                    var* _ = curtid->findVar(describingFuncName);
+                    if (_->type_ != "void") {
+                        throw "The previous function should return: " + _->type_ + "\nbut doesn't return any\n" + errCurLex();
+                    }
+                }
+                describingFuncName = "main";
                 std::tie(cur, num) = movLexem();
                 if (cur != "(") {
                     throw "Syntax error: expected ( in main call\n"s + errLastLex();

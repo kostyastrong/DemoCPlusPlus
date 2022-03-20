@@ -43,8 +43,17 @@ void typeStack::pushop(std::string* a) {  // the main perat
     mem_.push_back(a);
 }
 
+void typeStack::pushop(std::string a) {
+    mem_.push_back(new std::string(std::move(a)));
+}
+
 void typeStack::pushtype(std::string *a) {
     mem_.push_back(a);
+    checkOp();
+}
+
+void typeStack::pushtype(std::string a) {
+    mem_.push_back(new std::string(std::move(a)));
     checkOp();
 }
 

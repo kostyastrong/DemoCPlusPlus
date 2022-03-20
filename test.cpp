@@ -6,7 +6,6 @@ int f(int k, int a) {
 }
 
 int main() {
-    int m = 3;
-    cout << f(5, 4);
+    return 5 + 8;
 }
 

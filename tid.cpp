@@ -66,14 +66,16 @@ tid::tid(std::string name, tid* par) {
     swap(name, name_);
 }
 
-var::var(int line, int pos, std::string type, std::string name): line_(line), pos_(pos) {
+var::var(int line, int pos, std::string type, std::string name, bool func=false): line_(line), pos_(pos), isfunc(func){
     std::swap(type, type_);
     std::swap(name, name_);
 }
 
 var::var() {}
 
-var::var(std::pair<int, int> where, std::string type, std::string name): line_(where.first), pos_(where.second) {
+var::var(std::pair<int, int> where, std::string type, std::string name, bool func=false):
+line_(where.first), pos_(where.second), isfunc(func)
+{
     std::swap(type, type_);
     std::swap(name, name_);
 }

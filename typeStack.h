@@ -16,7 +16,9 @@ public:
     typeStack(LexicalAnalyzator*);
     std::deque<std::string*> mem_;  // string pointers is faster
     void pushtype(std::string*);
+    void pushtype(std::string);
     void pushop(std::string*);
+    void pushop(std::string);
     void checkOp();
     void checkBinOp();  // binary operations
 

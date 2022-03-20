@@ -34,7 +34,8 @@ private:
     bool isOperation3();
     bool isOperation4();
     bool isDelimiter();
-    bool isName(bool declar, std::string t, bool putInStack);
+    bool isName(bool declar, std::string t, bool putInStack, bool func);
+    // bool isDeclared(bool declar, std::string t, bool putInStack, bool func);
     bool stExpression();
     bool stReturnOperator();
     bool stInputOperator();
