@@ -51,7 +51,7 @@ std::unordered_set<char>* LexicalAnalyzator::getChars(const std::string& reserve
     return ret;
 }
 
-std::vector<std::string> devDouble(std::string& num) {
+std::vector<std::string> devDouble(std::string& num) {  // we decided to remove 'e' in doubles because it's difficult
     std::vector<std::string> ret(3);
     int i = 0, n = num.size();
     for (; i < n; ++i) {
@@ -158,10 +158,11 @@ std::pair<std::string, int> LexicalAnalyzator::getLexem() {
     return ret;
 }
 
-std::pair<std::string, int> LexicalAnalyzator::movLexem() {
+std::pair<std::string, int> LexicalAnalyzator::movLexem(bool rev) {
     if (! memory_) return {"?", 0};
     std::pair<std::string, int> ret = {memory_->lexem_, memory_->t_};
-    memory_ = memory_->next;
+    if (rev) memory_ = memory_->prev;
+    else memory_ = memory_->next;
     return ret;
 }
 
@@ -186,7 +187,11 @@ LexicalAnalyzator::LexicalAnalyzator(const std::string& sourceTrans, const std::
 
     deviders_ = getChars(devidersDefPath);
     deviders_->insert(' ');
-    states_[20]->jump_[' '] = states_[20];
+    states_[20]->jump_[' '] = states_[20];  // 20 is a number for string
+    for (int i = 0; i < 256; ++i) {
+        if (i == '"') continue;
+        states_[20]->jump_[i] = states_[20];
+    }
     reservedWords_ = getWords(reservedDefPath);
 }
 

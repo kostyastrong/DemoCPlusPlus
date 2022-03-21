@@ -20,6 +20,10 @@ void exitScope(tid*& cur=curtid) {
     cur = cur->par_;
 }
 
+bool isAssignment(std::string& a) {
+    return a == "=" || a == "+=" || a == "/=" || a == "*=" || a == "-=";
+}
+
 std::pair<std::string, int> SyntaxAnalyzator::movLexem() {
     return mainLexer_->movLexem();
 }
@@ -150,7 +154,7 @@ bool SyntaxAnalyzator::isName(bool declar=false, std::string t="", bool putInSta
         if (func) {
             if (describingFunc) {
                 var* _ = curtid->findVar(describingFuncName);
-                if (_->type_ != "void") {
+                if (_->type_ != "void" && describingFuncName != "main") {
                     throw "The previous function should return: " + _->type_ + "\n but doesn't return any";
                 }
             }
@@ -178,6 +182,7 @@ bool SyntaxAnalyzator::stReturnOperator() {
         if (a->type_ != "void" && describingFuncName != "main") {
             throw "The current function should return: " + a->type_ + "\n but doesn't return any" + errCurLex();
         }
+
         movLexem();
         return true;
     }
@@ -245,6 +250,7 @@ bool SyntaxAnalyzator::stOutputOperator() {
         movLexem();
     }
     while (true) {
+        opStack->memClear();
         std::tie(cur, num) = movLexem();
         if (cur == ";") {
             return true;
@@ -567,9 +573,9 @@ bool SyntaxAnalyzator::stPriority9() {
 bool SyntaxAnalyzator::stPriority10() {
     if (stPriority9()) {
         auto [cur, num] = getLexem();
-        if (cur == "=") {
+        if (isAssignment(cur)) {  // cur == "="
             movLexem();
-            opStack->pushop(new std::string("="));
+            opStack->pushop(new std::string(cur));
             if (stPriority10()) {
                 return true;
             }
@@ -602,6 +608,7 @@ bool SyntaxAnalyzator::stExpression() {
 }
 
 bool SyntaxAnalyzator::stExpressionOperator() {
+    opStack->memClear();
     stExpression();
     auto [cur, num] = movLexem();
     if (cur != ";") {
@@ -738,12 +745,16 @@ bool SyntaxAnalyzator::stCycleOperator() {
     }
 }
 
+bool isEq(std::string& a) {
+    return a == "=" || a == "+=" || a == "/=" || a == "*=" || a == "-=";
+}
+
 bool SyntaxAnalyzator::stSection(bool declar=false, std::string t="") {
     if (isName(declar, std::move(t), true)) {
         movLexem();
         auto [cur, num] = getLexem();
-        if (cur == "=") {
-            opStack->pushop(new std::string("="));
+        if (isAssignment(cur)) {
+            opStack->pushop(new std::string(cur));
             movLexem();
             stExpression();
             return true;
@@ -908,7 +919,10 @@ bool SyntaxAnalyzator::stProgram() {
                         throw "The previous function should return: " + _->type_ + "\nbut doesn't return any\n" + errCurLex();
                     }
                 }
-                describingFuncName = "main";
+                mainLexer_->movLexem(true);  // step back
+                isName(true, "int", false, true);
+                movLexem();
+
                 std::tie(cur, num) = movLexem();
                 if (cur != "(") {
                     throw "Syntax error: expected ( in main call\n"s + errLastLex();
@@ -935,6 +949,7 @@ bool SyntaxAnalyzator::stProgram() {
 }
 
 bool SyntaxAnalyzator::stOperator(bool enteredScope) {
+    opStack->memClear();
     auto [cur, num] = getLexem();
     if (isType()) {
         stDeclaration();
