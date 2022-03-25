@@ -1,4 +1,7 @@
 
 int main() {
-     cout << "aboba"[2];
+
+string s = "aboba";
+string m = "44";
+     s[m];
 }

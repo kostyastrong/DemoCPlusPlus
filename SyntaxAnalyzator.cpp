@@ -415,7 +415,10 @@ bool SyntaxAnalyzator::stArrayTail() {
     if (cur != "[") {
         throw "Syntax error: expected [ before array\'s element access\n"s + errCurLex();
     }
+    opStack->pushtype("int");
+    opStack->pushop("=");
     stExpression();
+    opStack->checkOp();
     std::tie(cur, num) = movLexem();
     if (cur != "]") {
         throw "Syntax error: expected ] after array\'s element access\n"s + errCurLex();
