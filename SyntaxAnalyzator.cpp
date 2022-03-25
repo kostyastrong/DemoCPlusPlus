@@ -189,10 +189,13 @@ bool SyntaxAnalyzator::stReturnOperator() {
     opStack->pushtype(a->type_);
     opStack->pushop("=");
 
+
+
     if (stExpression()) {
         std::tie(cur, num) = movLexem();
         if (cur == ";") {
             describingFunc = false;
+            opStack->checkOp();
             return true;
         } else {
             throw "Syntax error: expected ; after return operator, but "s + (num ? cur : "nothing"s) + "is found\n"s + errCurLex();
@@ -361,6 +364,7 @@ bool SyntaxAnalyzator::stAtom() {
                     throw "Semantic error: No declared before: " + errCurLex();
                 }
                 if (_->isfunc) {
+                    opStack->pushtype(_->type_);
                     return true; // function call
                 }
                 else {
@@ -373,8 +377,11 @@ bool SyntaxAnalyzator::stAtom() {
                 return true; // array access call
             }
         }
-        std::string _ = std::move(curtid->checkid(a));
-        opStack->pushtype(new std::string(_));
+        var* _ = curtid->findVar(a.name_);
+        opStack->pushtype(new std::string(_->type_));
+        if (_->isfunc) {
+            throw "Semantic error: using function as a variable\n"s + errCurLex();
+        }
         return true;
     }
     throw "Syntax error: incorrect atom\n"s + errCurLex();
@@ -757,6 +764,7 @@ bool SyntaxAnalyzator::stSection(bool declar=false, std::string t="") {
             opStack->pushop(new std::string(cur));
             movLexem();
             stExpression();
+            opStack->checkOp();
             return true;
             //std::cout << "a!!!!" << std::endl;
         } else if (cur == "[") {
@@ -864,7 +872,7 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
         if (cur != ")") {
             throw "Syntax error: expected ) in declaration of function\n"s + errCurLex();
         } else {
-            return stCompoundOperator();
+            return stCompoundOperator(true);
         }
     } else {
         std::tie(cur, num) = getLexem();

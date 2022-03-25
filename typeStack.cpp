@@ -26,6 +26,7 @@ void typeStack::checkOp() {  // with replacing two els to one
         return;
         // throw "Programming error: less than 2 variables in the stack:" + mainLexer_->errCurLex();
     }
+    operation = mem_[mem_.size() - 2];
     lastEquality(*mem_.back(), *mem_[mem_.size() - 3]);
     if ((*operation != "+" && *operation != "=" && *operation != "!=" && *operation != "==")
         && *mem_.back() == "string") {
@@ -49,7 +50,7 @@ void typeStack::pushop(std::string a) {
 
 void typeStack::pushtype(std::string *a) {
     mem_.push_back(a);
-    checkOp();
+    //checkOp();
 }
 
 void typeStack::pushtype(std::string a) {
