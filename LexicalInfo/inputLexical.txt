@@ -1,7 +1,12 @@
+int f(int r, int k) {
+    k = 5 + 9;
+    r = r + 5;
+    return k - r;
+}
 
 int main() {
-
-string s = "aboba";
-string m = "44";
-     s[m];
+    int a = -6 + 9 * 4;
+    int b = a + 7;
+    string m[56]
+    m[4] = f(a, b * 5);
 }

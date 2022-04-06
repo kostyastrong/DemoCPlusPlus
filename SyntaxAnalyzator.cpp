@@ -78,6 +78,7 @@ bool SyntaxAnalyzator::isSign() {
     if (cur != "+" && cur != "-") {
         return false;
     }
+    if (cur == "+") return true;  // how to act with strings?
     opStack->pushop(new std::string("_"));  // binary minus
     return true;
 }
@@ -373,6 +374,8 @@ bool SyntaxAnalyzator::stAtom() {
             } // else exception
         }
         if (cur == "[") {
+            var* _ = curtid->findVar(funcName);
+            opStack->pushtype(_->type_);
             if (stArrayTail()) {
                 return true; // array access call
             }
@@ -434,27 +437,9 @@ bool SyntaxAnalyzator::stPriority0(){
     }
     if (isIncrement()) {
         movLexem();
-        //        if (!isName()) {
-        //            throw "Syntax error: expected name after increment\n"s + errCurLex();
-        //        }
         stAtom();
         return true;
     }
-    //    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    //    movLexem();
-    //    if (isIncrement()) {
-    //        mainLexer_->jumpToCell(beforeTriesCell);
-    //        if (isName()) {
-    //            movLexem();
-    //            if (isIncrement()) {
-    //                return true;
-    //            } else {
-    //                throw "Syntax error: expected increment after name\n"s + errCurLex();
-    //            }
-    //        } else {
-    //            throw "Syntax error: expected name before increment\n"s + errCurLex();
-    //        }
-    //    }
     stAtom();
     if (isIncrement()) {
         movLexem();
@@ -466,9 +451,8 @@ bool SyntaxAnalyzator::stPriority1() {
     if (stPriority0()) {
         if (isOperation1()) {
             movLexem();
-            if (stPriority1()) {
-                return true;
-            }
+            stPriority1();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -478,9 +462,8 @@ bool SyntaxAnalyzator::stPriority2() {
     if (stPriority1()) {
         if (isOperation2()) {
             movLexem();
-            if (stPriority2()) {
-                return true;
-            }
+            stPriority2();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -490,9 +473,8 @@ bool SyntaxAnalyzator::stPriority3() {
     if (stPriority2()) {
         if (isOperation3()) {
             movLexem();
-            if (stPriority3()) {
-                return true;
-            }
+            stPriority3();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -502,9 +484,8 @@ bool SyntaxAnalyzator::stPriority4() {
     if (stPriority3()) {
         if (isOperation4()) {
             movLexem();
-            if (stPriority4()) {
-                return true;
-            }
+            stPriority4();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -516,9 +497,8 @@ bool SyntaxAnalyzator::stPriority5() {
         if (cur == "&") {
             movLexem();
             opStack->pushop(new std::string("&"));
-            if (stPriority5()) {
-                return true;
-            }
+            stPriority5();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -530,9 +510,8 @@ bool SyntaxAnalyzator::stPriority6() {
         if (cur == "|") {
             movLexem();
             opStack->pushop(new std::string("|"));
-            if (stPriority6()) {
-                return true;
-            }
+            stPriority6();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -544,9 +523,8 @@ bool SyntaxAnalyzator::stPriority7() {
         if (cur == "^") {
             movLexem();
             opStack->pushop(new std::string("^"));
-            if (stPriority7()) {
-                return true;
-            }
+            stPriority7();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -558,9 +536,8 @@ bool SyntaxAnalyzator::stPriority8() {
         if (cur == "&&") {
             movLexem();
             opStack->pushop(new std::string("&&"));
-            if (stPriority8()) {
-                return true;
-            }
+            stPriority8();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -572,9 +549,8 @@ bool SyntaxAnalyzator::stPriority9() {
         if (cur == "||") {
             movLexem();
             opStack->pushop(new std::string("||"));
-            if (stPriority9()) {
-                return true;
-            }
+            stPriority9();
+            opStack->checkOp();
         }
         return true;
     } // else exception
@@ -586,33 +562,14 @@ bool SyntaxAnalyzator::stPriority10() {
         if (isAssignment(cur)) {  // cur == "="
             movLexem();
             opStack->pushop(new std::string(cur));
-            if (stPriority10()) {
-                return true;
-            }
+            stPriority10();
+            opStack->checkOp();
         }
         return true;
     } // else exception
 }
 
 bool SyntaxAnalyzator::stExpression() {
-    //    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
-    //    movLexem();
-    //    auto [cur, num] = getLexem();
-    //    mainLexer_->jumpToCell(beforeTriesCell);
-    //    if (cur == "=") {
-    //        if (isName()) {
-    //            movLexem();
-    //            std::tie(cur, num) = movLexem();
-    //            if (cur == "=") {
-    //                stPriority9();
-    //                return true;
-    //            } else {
-    //                throw "Syntax error: expected = in assignent\n"s + errCurLex();
-    //            }
-    //        } else {
-    //            throw "Syntax error: expected name in assignent\n"s + errCurLex();
-    //        }
-    //    }
     stPriority10();
     return true;
 }
@@ -772,7 +729,10 @@ bool SyntaxAnalyzator::stSection(bool declar=false, std::string t="") {
             //std::cout << "a!!!!" << std::endl;
         } else if (cur == "[") {
             movLexem();
+            opStack->pushtype("int");
+            opStack->pushop("=");
             stExpression();
+            opStack->checkOp();
             std::tie(cur, num) = movLexem();
             if (cur != "]") {
                 throw "Syntax error: expected ] at the end of section\n"s + errCurLex();

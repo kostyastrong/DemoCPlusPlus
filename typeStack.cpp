@@ -19,8 +19,9 @@ void typeStack::checkOp() {  // with replacing two els to one
         // throw "almost empty stack: " + mainLexer_->errCurLex();
     }
     std::string* operation = mem_[mem_.size() - 2];
-    if (mem_.size() == 2 || *operation == "++" || *operation == "--" || *operation == "!") {
+    while (mem_.size() == 2 || *operation == "_" || *operation == "++" || *operation == "--" || *operation == "!") {
         checkBinOp();
+        operation = mem_.back();
     }
     if (mem_.size() < 3) {
         return;
@@ -69,6 +70,14 @@ void typeStack::checkBinOp() {
     if (mem_.size() < 2) return;
     std::string* a = mem_.back();
     std::string* operation = mem_[mem_.size() - 2];
+    if (std::isalpha((*operation)[0])) {
+        delete mem_.back();
+        mem_.pop_back();
+        if (*mem_.back() == "string") {
+            throw "Unbelievable operation with strings:" + mainLexer_->errCurLex();
+        }
+        return;
+    }
     mem_.pop_back();
     delete mem_.back();
     mem_.pop_back();
