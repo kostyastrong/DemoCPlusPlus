@@ -403,10 +403,13 @@ bool SyntaxAnalyzator::stFunctionTail() {
     stExpression();
     while (true) {
         std::tie(cur, num) = movLexem();
-        if (cur == ")")
+        if (cur == ")") {
+            opStack->mem_.pop_back();
             return true;
+        }
         else if (cur == ",") {
             stExpression();
+            opStack->mem_.pop_back();
             continue;
         } else {
             throw "Syntax error: expected ) or , in function call\n"s + errCurLex();

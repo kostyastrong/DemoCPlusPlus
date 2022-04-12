@@ -1,12 +1,14 @@
-int f(int r, int k) {
-    k = 5 + 9;
-    r = r + 5;
-    return k - r;
+int f(int k) {
+    k = 5;
+    return k;
 }
 
 int main() {
-    int a = -6 + 9 * 4;
-    int b = a + 7;
-    string m[56]
-    m[4] = f(a, b * 5);
+    int a = 5 * 6 + 3;
+    int b = 4 - 3 / 2 + a;
+    string t = "aaa";
+    int mas[32];
+    a += mas[2+6];
+    b = --a;
+    int i = f(b + 5 - 1);
 }
