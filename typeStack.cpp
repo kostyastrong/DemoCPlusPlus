@@ -6,6 +6,7 @@
 
 
 void typeStack::lastEquality(std::string &a, std::string &b) {
+    std::cout << a << " " << b << std::endl;
     if (a != b) {  // we don't have casts for now
         throw "Semantic error: operation with 2 dif. types on: " + mainLexer_->errCurLex();
         // i wouldn't be sure about position in the string here

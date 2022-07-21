@@ -7,7 +7,8 @@
 #include "LexicalAnalyzator.h"
 #include "tid.h"
 #include "typeStack.h"
-
+#include "polish.h"
+#include <vector>
 
 
 class SyntaxAnalyzator {
@@ -28,7 +29,7 @@ private:
     bool isConstString();
     bool isConst();
     bool isSign();
-    bool isIncrement();
+    bool isIncrement(bool flag);
     bool isOperation1();
     bool isOperation2();
     bool isOperation3();

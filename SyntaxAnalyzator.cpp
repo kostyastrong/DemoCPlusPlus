@@ -10,6 +10,8 @@ tid* curtid = new tid("global");
 typeStack* opStack = nullptr;  // the creation in syntaxAnalyzer::syntaxAnalyzer
 bool describingFunc = false;
 std::string describingFuncName = "";
+polish Polish;
+std::vector<int> breakPositions, continuePositions;
 
 void enterScope(tid*& cur=curtid, std::string name=""){
     cur->tidChild(name);
@@ -78,15 +80,27 @@ bool SyntaxAnalyzator::isSign() {
     if (cur != "+" && cur != "-") {
         return false;
     }
-    if (cur == "+") return true;  // how to act with strings?
-    opStack->pushop(new std::string("_"));  // binary minus
+    if (cur == "-") {
+        Polish.pushStack("_", 11);
+        opStack->pushop(new std::string("_"));
+    }
     return true;
 }
 
-bool SyntaxAnalyzator::isIncrement() {
+bool SyntaxAnalyzator::isIncrement(bool flag) { // true - postfix, false - prefix
     auto [cur, num] = getLexem();
     if (cur != "--" && cur != "++") {
         return false;
+    }
+    // ?? - postfix ++, @@ - postfix -0
+    if (flag) {
+        if (cur == "--") {
+            Polish.pushStack("@@", 0);
+        } else {
+            Polish.pushStack("??", 0);
+        }
+    } else {
+        Polish.pushStack(cur, 11);
     }
     opStack->pushop(new std::string(std::move(cur)));
     return true;
@@ -96,6 +110,7 @@ bool SyntaxAnalyzator::isOperation1() {
     auto [cur, num] = getLexem();
     if (cur != "*" && cur != "/" && cur != "%")
         return false;
+    Polish.pushStack(cur, 10);
     opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
@@ -104,14 +119,17 @@ bool SyntaxAnalyzator::isOperation2() {
     auto [cur, num] = getLexem();
     if (cur != "+" && cur != "-")
         return false;
+    Polish.pushStack(cur, 9);
     opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
 
 bool SyntaxAnalyzator::isOperation3() {
+    std::cout << "kekekekek" << std::endl;
     auto [cur, num] = getLexem();
     if (cur != "<" && cur != ">" && cur != "<=" && cur != ">=")
         return false;
+    Polish.pushStack(cur, 8);
     opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
@@ -120,6 +138,7 @@ bool SyntaxAnalyzator::isOperation4() {
     auto [cur, num] = getLexem();
     if (cur != "==" && cur != "<>")
         return false;
+    Polish.pushStack(cur, 7);
     opStack->pushop(new std::string(std::move(cur)));
     return true;
 }
@@ -185,6 +204,7 @@ bool SyntaxAnalyzator::stReturnOperator() {
         }
 
         movLexem();
+        Polish.pushStack("return"s, -1);
         return true;
     }
     opStack->pushtype(a->type_);
@@ -197,6 +217,7 @@ bool SyntaxAnalyzator::stReturnOperator() {
         if (cur == ";") {
             describingFunc = false;
             opStack->checkOp();
+            Polish.pushStack("return"s, -1);
             return true;
         } else {
             throw "Syntax error: expected ; after return operator, but "s + (num ? cur : "nothing"s) + "is found\n"s + errCurLex();
@@ -214,6 +235,7 @@ bool SyntaxAnalyzator::stInputOperator() {
     if (cur != ">>") {
         throw "Syntax error: expected >> in input operator\n"s + errCurLex();
     }
+    auto [varName, nameNum] = getLexem();
     if (!isName()) {
         throw "Syntax error: expected name in input operator\n"s + errCurLex();
     } else {
@@ -282,6 +304,9 @@ bool SyntaxAnalyzator::stBreakOperator() {
     if (cur != ";") {
         throw "Syntax error: expected ; after break\n"s + errCurLex();
     }
+    breakPositions.push_back(Polish.getFree());
+    Polish.blank();
+    Polish.pushStack("goto", 14);
     return true;
 }
 
@@ -294,16 +319,23 @@ bool SyntaxAnalyzator::stContinueOperator() {
     if (cur != ";") {
         throw "Syntax error: expected ; after continue\n"s + errCurLex();
     }
+    continuePositions.push_back(Polish.getFree());
+    Polish.blank();
+    Polish.pushStack("goto", 14);
     return true;
 }
 
 
 bool SyntaxAnalyzator::stInitAtom() {
     if (isConst()) {
+        auto [cur, num] = getLexem();
+        Polish.pushStack(cur, 0);
         movLexem();
         return true;
     }
     if (isBool()) {
+        auto [cur, num] = getLexem();
+        Polish.pushStack(cur, 0);
         movLexem();
         return true;
     }
@@ -318,8 +350,10 @@ bool SyntaxAnalyzator::stInitAtom() {
 
 bool SyntaxAnalyzator::stAtom() {
     auto [cur, num] = getLexem();
+    //std::cout << cur << " atom " << std::endl;
     if (cur == "!" ) {
         if (stInitAtom()) {
+            Polish.pushStack("!", 11);
             opStack->pushop(new std::string("!"));
             return true;
         } // else exception
@@ -343,22 +377,29 @@ bool SyntaxAnalyzator::stAtom() {
         }
     }
     if (cur == "(") {
+        Polish.pushStack("(", -1);
         movLexem();
         if (stExpression()) {
             std::tie(cur, num) = movLexem();
             if (cur != ")") {
                 throw "Syntax error: expected ) after expression\n"s + errCurLex();
             } else {
+                Polish.pushStack(")", -1);
                 return true;
             }
         } // else exception
     }
     if (isName()) {
+        //std::cout << cur << "exp" << std::endl;
+        std::string name_ = cur;
         var a = var(curWhere(), "", cur, false);
         std::string funcName = getLexem().first;
+        //std::cout << funcName << ">>>>" << std::endl;
         movLexem();
         std::tie(cur, num) = getLexem();
         if (cur == "(") {
+            //std::cout << "aaaaa awwhaaata iiississiis" << std::endl;
+            Polish.pushStack(funcName, 12);
             if (stFunctionTail()) {
                 var* _ = curtid->findVar(funcName);
                 if (!_) {
@@ -374,8 +415,8 @@ bool SyntaxAnalyzator::stAtom() {
             } // else exception
         }
         if (cur == "[") {
-            var* _ = curtid->findVar(funcName);
-            opStack->pushtype(_->type_);
+            //std::cout << "aaaaa mass" << std::endl;
+            Polish.pushStack(name_, 13);
             if (stArrayTail()) {
                 return true; // array access call
             }
@@ -385,6 +426,7 @@ bool SyntaxAnalyzator::stAtom() {
         if (_->isfunc) {
             throw "Semantic error: using function as a variable\n"s + errCurLex();
         }
+        Polish.pushStack(name_, 0);
         return true;
     }
     throw "Syntax error: incorrect atom\n"s + errCurLex();
@@ -395,17 +437,22 @@ bool SyntaxAnalyzator::stFunctionTail() {
     if (cur != "(") {
         throw "Syntax error: expected ( before function call\n"s + errCurLex();
     }
+    Polish.pushStack("(", -1);
     std::tie(cur, num) = getLexem();
     if (cur == ")") {
+        Polish.pushStack(")", 12);
         movLexem();
         return true;
     }
     stExpression();
     while (true) {
         std::tie(cur, num) = movLexem();
-        if (cur == ")")
+        if (cur == ")") {
+            Polish.pushStack(")", 12);
             return true;
+        }
         else if (cur == ",") {
+            Polish.pushStack(",", 12);
             stExpression();
             continue;
         } else {
@@ -418,6 +465,7 @@ bool SyntaxAnalyzator::stArrayTail() {
     if (cur != "[") {
         throw "Syntax error: expected [ before array\'s element access\n"s + errCurLex();
     }
+    Polish.pushStack("[", -1);
     opStack->pushtype("int");
     opStack->pushop("=");
     stExpression();
@@ -426,6 +474,7 @@ bool SyntaxAnalyzator::stArrayTail() {
     if (cur != "]") {
         throw "Syntax error: expected ] after array\'s element access\n"s + errCurLex();
     }
+    Polish.pushStack("]", -1);
     return true;
 }
 
@@ -435,13 +484,31 @@ bool SyntaxAnalyzator::stPriority0(){
         stAtom();
         return true;
     }
-    if (isIncrement()) {
+    if (isIncrement(true)) {
         movLexem();
+        //        if (!isName()) {
+        //            throw "Syntax error: expected name after increment\n"s + errCurLex();
+        //        }
         stAtom();
         return true;
     }
+    //    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
+    //    movLexem();
+    //    if (isIncrement()) {
+    //        mainLexer_->jumpToCell(beforeTriesCell);
+    //        if (isName()) {
+    //            movLexem();
+    //            if (isIncrement()) {
+    //                return true;
+    //            } else {
+    //                throw "Syntax error: expected increment after name\n"s + errCurLex();
+    //            }
+    //        } else {
+    //            throw "Syntax error: expected name before increment\n"s + errCurLex();
+    //        }
+    //    }
     stAtom();
-    if (isIncrement()) {
+    if (isIncrement(false)) {
         movLexem();
     }
     return true;
@@ -451,8 +518,9 @@ bool SyntaxAnalyzator::stPriority1() {
     if (stPriority0()) {
         if (isOperation1()) {
             movLexem();
-            stPriority1();
-            opStack->checkOp();
+            if (stPriority1()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -462,8 +530,9 @@ bool SyntaxAnalyzator::stPriority2() {
     if (stPriority1()) {
         if (isOperation2()) {
             movLexem();
-            stPriority2();
-            opStack->checkOp();
+            if (stPriority2()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -473,8 +542,9 @@ bool SyntaxAnalyzator::stPriority3() {
     if (stPriority2()) {
         if (isOperation3()) {
             movLexem();
-            stPriority3();
-            opStack->checkOp();
+            if (stPriority3()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -484,8 +554,9 @@ bool SyntaxAnalyzator::stPriority4() {
     if (stPriority3()) {
         if (isOperation4()) {
             movLexem();
-            stPriority4();
-            opStack->checkOp();
+            if (stPriority4()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -496,9 +567,11 @@ bool SyntaxAnalyzator::stPriority5() {
         auto [cur, num] = getLexem();
         if (cur == "&") {
             movLexem();
+            Polish.pushStack("&", 6);
             opStack->pushop(new std::string("&"));
-            stPriority5();
-            opStack->checkOp();
+            if (stPriority5()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -509,9 +582,11 @@ bool SyntaxAnalyzator::stPriority6() {
         auto [cur, num] = getLexem();
         if (cur == "|") {
             movLexem();
+            Polish.pushStack("|", 5);
             opStack->pushop(new std::string("|"));
-            stPriority6();
-            opStack->checkOp();
+            if (stPriority6()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -522,9 +597,11 @@ bool SyntaxAnalyzator::stPriority7() {
         auto [cur, num] = getLexem();
         if (cur == "^") {
             movLexem();
+            Polish.pushStack("^", 4);
             opStack->pushop(new std::string("^"));
-            stPriority7();
-            opStack->checkOp();
+            if (stPriority7()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -535,9 +612,11 @@ bool SyntaxAnalyzator::stPriority8() {
         auto [cur, num] = getLexem();
         if (cur == "&&") {
             movLexem();
+            Polish.pushStack("&&", 3);
             opStack->pushop(new std::string("&&"));
-            stPriority8();
-            opStack->checkOp();
+            if (stPriority8()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -548,9 +627,11 @@ bool SyntaxAnalyzator::stPriority9() {
         auto [cur, num] = getLexem();
         if (cur == "||") {
             movLexem();
+            Polish.pushStack("||", 2);
             opStack->pushop(new std::string("||"));
-            stPriority9();
-            opStack->checkOp();
+            if (stPriority9()) {
+                return true;
+            }
         }
         return true;
     } // else exception
@@ -561,15 +642,36 @@ bool SyntaxAnalyzator::stPriority10() {
         auto [cur, num] = getLexem();
         if (isAssignment(cur)) {  // cur == "="
             movLexem();
+            Polish.pushStack(cur, 1);
+            //std::cout << cur << ">>>" << std::endl;
             opStack->pushop(new std::string(cur));
-            stPriority10();
-            opStack->checkOp();
+            if (stPriority10()) {
+                return true;
+            }
         }
         return true;
     } // else exception
 }
 
 bool SyntaxAnalyzator::stExpression() {
+    //    auto beforeTriesCell = mainLexer_->getCurrentLexCell();
+    //    movLexem();
+    //    auto [cur, num] = getLexem();
+    //    mainLexer_->jumpToCell(beforeTriesCell);
+    //    if (cur == "=") {
+    //        if (isName()) {
+    //            movLexem();
+    //            std::tie(cur, num) = movLexem();
+    //            if (cur == "=") {
+    //                stPriority9();
+    //                return true;
+    //            } else {
+    //                throw "Syntax error: expected = in assignent\n"s + errCurLex();
+    //            }
+    //        } else {
+    //            throw "Syntax error: expected name in assignent\n"s + errCurLex();
+    //        }
+    //    }
     stPriority10();
     return true;
 }
@@ -581,12 +683,14 @@ bool SyntaxAnalyzator::stExpressionOperator() {
     if (cur != ";") {
         throw "Syntax error: expected ; at the end of expression operator\n"s + errCurLex();
     }
+    Polish.pushStack(";", -1);
     opStack->memClear();
     return true;
 }
 
 
 bool SyntaxAnalyzator::stConditionalOperator() {
+    std::vector<int> adress, want_fill;
     auto [cur, num] = movLexem();
     if (cur != "if") {
         throw "Syntax error: expected if in conditional (if) operator\n"s + errCurLex();
@@ -595,14 +699,22 @@ bool SyntaxAnalyzator::stConditionalOperator() {
     if (cur != "(") {
         throw "Syntax error: expected ( in conditional (if) operator\n"s + errCurLex();
     }
+    Polish.pushStack("(", -1);
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ")") {
         throw "Syntax error: expected ) in conditional (if) operator\n"s + errCurLex();
     }
+    Polish.pushStack(")", -1);
+    want_fill.push_back(Polish.getFree());
+    Polish.blank();
+    Polish.pushStack("goto_false", 14);
     enterScope();
     stOperator();
     exitScope();
+    want_fill.push_back(Polish.getFree());
+    Polish.blank();
+    Polish.pushStack("goto", 14);
     while (true) {
         std::tie(cur, num) = getLexem();
         if (cur != "elif") {
@@ -613,27 +725,59 @@ bool SyntaxAnalyzator::stConditionalOperator() {
         if (cur != "(") {
             throw "Syntax error: expected ( in conditional (elif) operator\n"s + errCurLex();
         }
+        Polish.pushStack("(", -1);
+        adress.push_back(Polish.getFree());
         stExpression();
         std::tie(cur, num) = movLexem();
         if (cur != ")") {
             throw "Syntax error: expected ) in conditional (elif) operator\n"s + errCurLex();
         }
+        Polish.pushStack(")", -1);
+        want_fill.push_back(Polish.getFree());
+        Polish.blank();
+        Polish.pushStack("goto_false", 14);
         enterScope();
         stOperator();
         exitScope();
+        want_fill.push_back(Polish.getFree());
+        Polish.blank();
+        Polish.pushStack("goto", 14);
     }
     std::tie(cur, num) = getLexem();
     if (cur != "else") {
+        adress.push_back(Polish.getFree());
+        int pt = 0;
+        for (int i = 0; i < want_fill.size(); ++i) {
+            if (i % 2 == 1) {
+                Polish.putOp(Polish.getIndex(adress.back()), want_fill[i]);
+            } else {
+                Polish.putOp(Polish.getIndex(adress[pt]), want_fill[i]);
+                ++pt;
+            }
+        }
         return true;
     }
     movLexem();
+    adress.push_back(Polish.getFree());
     enterScope();
     stOperator();
     exitScope();
+    adress.push_back(Polish.getFree());
+    int pt = 0;
+    for (int i = 0; i < want_fill.size(); ++i) {
+        if (i % 2 == 1) {
+            Polish.putOp(Polish.getIndex(adress.back()), want_fill[i]);
+        } else {
+            Polish.putOp(Polish.getIndex(adress[pt]), want_fill[i]);
+            ++pt;
+        }
+    }
+
     return true;
 }
 
 bool SyntaxAnalyzator::stWhileOperator() {
+    std::vector<int> adress(10), want_fill(10);
     auto [cur, num] = movLexem();
     if (cur != "while") {
         throw "Syntax error: expected while in while-cycle operator\n"s + errCurLex();
@@ -642,20 +786,47 @@ bool SyntaxAnalyzator::stWhileOperator() {
     if (cur != "(") {
         throw "Syntax error: expected ( in while-cycle operator\n"s + errCurLex();
     }
+    breakPositions.push_back(-1);
+    continuePositions.push_back(-1);
+    Polish.pushStack(cur, -1);
+    adress[0] = Polish.getFree();
     stExpression();
+    //Polish.blank();
     std::tie(cur, num) = movLexem();
     if (cur != ")") {
         throw "Syntax error: expected ) in while-cycle operator\n"s + errCurLex();
     }
+    Polish.pushStack(cur, -1);
+    want_fill[0] = Polish.getFree();
+    Polish.blank();
+    Polish.pushStack("goto_false", 14);
     stOperator();
+    want_fill[1] = Polish.getFree();
+    Polish.blank();
+    Polish.pushStack("goto", 14);
+    adress[1] = Polish.getFree();
+    Polish.putOp(Polish.getIndex(adress[1]), want_fill[0]);
+    Polish.putOp(Polish.getIndex(adress[0]), want_fill[1]);
+    while (breakPositions.back() != -1) {
+        Polish.putOp(Polish.getIndex(adress[1]), breakPositions.back());
+        breakPositions.pop_back();
+    }
+    breakPositions.pop_back();
+    while (continuePositions.back() != -1) {
+        Polish.putOp(Polish.getIndex(adress[0]), continuePositions.back());
+        continuePositions.pop_back();
+    }
+    continuePositions.pop_back();
     return true;
 }
 
 bool SyntaxAnalyzator::stDoWhileOperator() {
+    std::vector<int> adress(10), want_fill(10);
     auto [cur, num] = movLexem();
     if (cur != "do") {
         throw "Syntax error: expected do in do-while-cycle operator\n"s + errCurLex();
     }
+    adress[0] = Polish.getFree();
     stOperator();
     std::tie(cur, num) = movLexem();
     if (cur != "while") {
@@ -665,16 +836,28 @@ bool SyntaxAnalyzator::stDoWhileOperator() {
     if (cur != "(") {
         throw "Syntax error: expected ( in do-while-cycle operator\n"s + errCurLex();
     }
+    Polish.pushStack("(", -1);
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ")") {
         throw "Syntax error: expected ) in do-while-cycle operator\n"s + errCurLex();
     }
+    Polish.pushStack(")", -1);
+    want_fill[0] = Polish.getFree();
+    Polish.blank();
+    Polish.pushStack("goto_false", 14);
+    want_fill[1] = Polish.getFree();
+    Polish.blank();
+    Polish.pushStack("goto", 14);
+    adress[1] = Polish.getFree();
+    Polish.putOp(Polish.getIndex(adress[1]), want_fill[0]);
+    Polish.putOp(Polish.getIndex(adress[0]), want_fill[1]);
     return true;
 }
 
 
 bool SyntaxAnalyzator::stForOperator() {
+    std::vector<int> adress(10), want_fill(10);
     auto [cur, num] = movLexem();
     if (cur != "for") {
         throw "Syntax error: expected for in for-cycle operator\n"s + errCurLex();
@@ -683,18 +866,41 @@ bool SyntaxAnalyzator::stForOperator() {
     if (cur != "(") {
         throw "Syntax error: expected ( in for-cycle operator\n"s + errCurLex();
     }
+    Polish.pushStack("(", -1);
     stDeclarationFor();
+    adress[0] = Polish.getFree();
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ";") {
         throw "Syntax error: expected ; after expression in for-cycle operator\n"s + errCurLex();
     }
+    Polish.pushStack(";", 15);
+    want_fill[0] = Polish.getFree();
+    Polish.blank();
+    Polish.pushStack("goto_false", 14);
+    want_fill[1] = Polish.getFree();
+    Polish.blank();
+    Polish.pushStack("goto", 14);
+    adress[1] = Polish.getFree();
     stExpression();
     std::tie(cur, num) = movLexem();
     if (cur != ")") {
         throw "Syntax error: expected ) after expression in for-cycle operator\n"s + errCurLex();
     }
+    Polish.pushStack(")", -1);
+    want_fill[2] = Polish.getFree();
+    Polish.blank();
+    Polish.pushStack("goto", 14);
+    adress[2] = Polish.getFree();
     stOperator(true);
+    want_fill[3] = Polish.getFree();
+    Polish.blank();
+    Polish.pushStack("goto", 14);
+    adress[3] = Polish.getFree();
+    Polish.putOp(Polish.getIndex(adress[3]), want_fill[0]);
+    Polish.putOp(Polish.getIndex(adress[2]), want_fill[1]);
+    Polish.putOp(Polish.getIndex(adress[0]), want_fill[2]);
+    Polish.putOp(Polish.getIndex(adress[1]), want_fill[3]);
     return true;
 }
 
@@ -717,10 +923,17 @@ bool isEq(std::string& a) {
 }
 
 bool SyntaxAnalyzator::stSection(bool declar=false, std::string t="") {
+    std::cout << "name !!!" << std::endl;
     if (isName(declar, std::move(t), true)) {
-        movLexem();
         auto [cur, num] = getLexem();
+        //Polish.pushStack(cur, 0);
+        std::string name_ = cur;
+        movLexem();
+        std::tie(cur, num) = getLexem();
         if (isAssignment(cur)) {
+            //std::cout << name_ << "!!!!!" << std::endl;
+            Polish.pushStack(name_, 0);
+            Polish.pushStack(cur, 1);
             opStack->pushop(new std::string(cur));
             movLexem();
             stExpression();
@@ -728,17 +941,19 @@ bool SyntaxAnalyzator::stSection(bool declar=false, std::string t="") {
             return true;
             //std::cout << "a!!!!" << std::endl;
         } else if (cur == "[") {
+            Polish.pushStack(name_, 13);
+            Polish.pushStack("[", -1);
             movLexem();
-            opStack->pushtype("int");
-            opStack->pushop("=");
             stExpression();
-            opStack->checkOp();
             std::tie(cur, num) = movLexem();
             if (cur != "]") {
                 throw "Syntax error: expected ] at the end of section\n"s + errCurLex();
             }
+            Polish.pushStack("]", -1);
             return true;
         } else {
+            //std::cout << name_ << ",....." << std::endl;
+            Polish.pushStack(name_, 0);
             return true;
         }
     }
@@ -756,11 +971,13 @@ bool SyntaxAnalyzator::stDeclaration() {
     while (true) {
         std::tie(cur, num) = getLexem();
         if (cur == ";") {
+            Polish.pushStack(";", -1);
             opStack->memClear();
             movLexem();
             return true;
         }
         if (cur == ",") {
+            Polish.pushStack(",", -1);
             movLexem();
             stSection();
             continue;
@@ -777,11 +994,13 @@ bool SyntaxAnalyzator::stDeclarationFor() {
         while (true) {
             auto [cur, num] = getLexem();
             if (cur == ";") {
+                Polish.pushStack(";", 15);
                 opStack->memClear();
                 movLexem();
                 return true;
             }
             if (cur == ",") {
+                Polish.pushStack(",", 15);
                 movLexem();
                 stSection();
                 opStack->memClear();
@@ -798,11 +1017,13 @@ bool SyntaxAnalyzator::stDeclarationFor() {
     while (true) {
         auto [cur, num] = getLexem();
         if (cur == ";") {
+            Polish.pushStack(";", 15);
             opStack->memClear();
             movLexem();
             return true;
         }
         if (cur == ",") {
+            Polish.pushStack(",", 15);
             movLexem();
             stSection();
             opStack->memClear();
@@ -821,6 +1042,7 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
     }
 
     movLexem();
+    auto [funcName, nameNum] = getLexem();
     if (!isName(declar, cur, false, true)) {
         throw "Syntax error: didn't find name of function\n"s + errCurLex();
     }
@@ -835,6 +1057,8 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
         if (cur != ")") {
             throw "Syntax error: expected ) in declaration of function\n"s + errCurLex();
         } else {
+            var* thisFunc = curtid->findVar(funcName);
+            thisFunc->funcaddr = Polish.getFree();
             return stCompoundOperator(true);
         }
     } else {
@@ -848,6 +1072,8 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
     while (true) {
         std::tie(cur, num) = movLexem();
         if (cur == ")") {
+            var* thisFunc = curtid->findVar(funcName);
+            thisFunc->funcaddr = Polish.getFree();
             return stCompoundOperator(true);
         }
         if (cur == ",") {
@@ -865,15 +1091,20 @@ bool SyntaxAnalyzator::stFunction(bool declar=false) {
 }
 
 bool SyntaxAnalyzator::stFunctionCallOperator() {
+    auto [cur, num] = getLexem();
+    //std::cout << cur << "function call" << std::endl;
     if (!isName()) {
         throw "Syntax error: expected name of function in function call\n"s + errCurLex();
     }
+    std::tie(cur, num) = getLexem();
+    Polish.pushStack(cur, 12);
     movLexem();
     stFunctionTail();
-    auto [cur, num] = movLexem();
+    std::tie(cur, num) = movLexem();
     if (cur != ";") {
         throw "Syntax error: expected ; after function call\n"s + errCurLex();
     }
+    Polish.pushStack(cur, 12);
     return true;
 }
 
@@ -902,6 +1133,8 @@ bool SyntaxAnalyzator::stProgram() {
                 if (cur != ")") {
                     throw "Syntax error: expected ) in main call\n"s + errLastLex();
                 }
+                var* mainFunc = curtid->findVar("main"s);
+                mainFunc->funcaddr = Polish.getFree();
                 stCompoundOperator();
                 return true;
             }
@@ -963,6 +1196,7 @@ bool SyntaxAnalyzator::stOperator(bool enteredScope) {
     std::tie(cur, num) = getLexem();
     mainLexer_->jumpToCell(beforeTriesCell);
     if (cur == "(") {
+        //std::cout << "aahhahahahhhaadh" << std::endl;
         stFunctionCallOperator();
         return true;
     }
@@ -975,11 +1209,13 @@ bool SyntaxAnalyzator::stCompoundOperator(bool enteredScope) {
     if (cur != "{") {
         throw "Syntax error: expected { at the beginning of compound operator\n"s + errCurLex();
     }
+    Polish.pushStack(cur, -1);
     if (!enteredScope) enterScope();  // for example, we start sycle for earlier than brackets
 
     while (true) {
         std::tie(cur, num) = getLexem();
-        if (cur == "}") {  // we always close block with exit of scope no matter what
+        if (cur == "}") {// we always close block with exit of scope no matter what
+            Polish.pushStack("}", -1);
             movLexem();
             exitScope();
             return true;

@@ -14,6 +14,7 @@ struct var{
     std::string type_, name_;
     int line_ = -1, pos_ = -1;
     bool isfunc = false;
+    int funcaddr = -1;
     explicit var(int line, int pos, std::string type, std::string name, bool func);
     explicit var(std::pair<int, int> where, std::string type, std::string name, bool func);
     var();
